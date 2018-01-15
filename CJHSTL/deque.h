@@ -120,6 +120,15 @@ using namespace CJH;
 				cur = first;
 				return *this;
 			}
+			/*++cur;
+			if (cur != last){
+				return *this;
+			}
+			else{
+				set_node(node + 1);
+				cur = first;
+				return *this;
+			}*/
 
 		}
 
@@ -206,6 +215,18 @@ using namespace CJH;
 		map_pointer _GetNode() const{
 			return this->node;
 		}
+
+		pointer_type _GetLast() const{
+			return this->last;
+		}
+
+		pointer_type _GetFirst() const{
+			return this->first;
+		}
+
+		pointer_type _GetCur() const{
+			return this->cur;
+		}
 	private:
 		map_pointer node;
 		pointer_type first;
@@ -239,8 +260,9 @@ using namespace CJH;
 			randow_access_iterator_tag, Bufsize> iterator;
 		typedef deque<_Ty, Alloc,Bufsize> self;
 	public:
-		deque() :start(), map_size(0), start(),finish(){
+		deque() : map_size(0), start(),finish(){
 			init_map();
+			create_map_and_node(1);
 		}
 		deque(const size_type n, const value_type& value) :map_size(0), start(), finish(){
 			//构造节点
@@ -272,11 +294,22 @@ using namespace CJH;
 
 
 		void push_back(const _Ty& value){
-
+			if (finish._GetCur() != finish._GetLast() - 1){
+				CJH::construct(CJH::addressof(*finish), value);
+				++finish;
+			}
+			else{
+				push_back_aux(value);
+			}
 		}
 
 		void push_front(const _Ty& value){
-
+			if (start._GetCur() != start._GetFirst()){
+				CJH::construct(--start, value);
+			}
+			else{
+				push_front_aux(value);
+			}
 		}
 
 		void pop_back(){
@@ -343,10 +376,127 @@ using namespace CJH;
 
 		}
 	protected:
+
+		inline void push_front_aux(const _Ty& value){
+			//情况1:若前方有map位， 则直接申请空间
+			if (map[0] == NULL){
+				map_pointer newnode = start._GetNode();
+				try{
+					--newnode;
+					*newnode = data_allocate::allocate();
+					--start;
+					CJH::uninitialized_fill_n(start, 1, value);
+				}
+				catch (...){
+					data_allocate::deallocate(*newnode);
+				}
+			}
+			else{//若前方无map位，更新map空间
+				update_map_front();
+				push_front_aux(value);
+			}
+		}
+
+		inline void push_back_aux(const value_type& value){
+			//情况一:若为一个元素都没有的加入
+			if (map == NULL){
+				try{
+					create_map_and_node(1);
+					finish = CJH::uninitialized_fill_n(finish, 1, value);
+				}
+				catch (...){
+					throw;
+				}
+			}
+			else{
+				//情况二:若在map还有节点为NULL 只用冲申请节点即可， 这里表示当前finish指向的缓冲只能容纳一个元素了  所以需要开辟新空间以供给finishi进行++操作 
+				if (NULL == map[map_size - 1]){
+					map_pointer curnode = finish._GetNode();
+					++curnode;
+					try{
+						if (*curnode != NULL) throw;
+						else{
+							*curnode = (pointer_type)data_allocate::allocate();
+						}
+						finish = CJH::uninitialized_fill_n(finish, 1, value);
+					}
+					catch (...){
+						data_allocate::deallocate(*curnode);
+						throw;
+					}
+				}
+				//情况三:若map都没有了位置， 则需要更新map在加入节点 
+				else{
+					update_map_back();
+					push_back_aux(value);
+				}
+			}
+		}
+		/** update 函数还有大bug有待更新*/
+		inline void update_map_front(){
+			map_pointer newmap = NULL;
+			size_type newmap_size = map_size / 2 + 1 + map_size;
+			try{
+				newmap = map_allocate::allocate(newmap_size);
+				int index = newmap_size;
+				for (int i = map_size - 1; i >= 0; --i){
+					newmap[--index] = map[i];
+				}
+				for (int i = index; i > 0;){
+					newmap[--i] = NULL;
+				}
+				//更新 迭代器 start finish  更新水位
+				destroy_map();
+				map = newmap;
+				start._SetNode(&map[index]);
+				for (int i = newmap_size - 1; i >= 0; --i){
+					if (map[i] != NULL){
+						finish._SetNode(&map[i]);
+						break;
+					}
+				}
+				map_size = newmap_size;
+			}
+			catch (...){
+				map_allocate::deallocate(newmap, newmap_size);
+				throw;
+			}
+		}
+
+		inline void update_map_back(){
+			map_pointer newmap = NULL;
+			size_type newmap_size = map_size / 2 + 1 + map_size;
+			try{
+				newmap = map_allocate::allocate(newmap_size);
+				for (int i = 0; i < map_size; ++i){
+					newmap[i] = map[i];
+				}
+				for (int i = map_size; i < newmap_size; ++i){
+					newmap[i] = NULL;
+				}
+				//更新 迭代器 start finish
+				destroy_map();
+				map = newmap;
+				for (int i = 0; i < map_size; ++i){
+					if (map[i] != NULL){
+						start._SetNode(&map[i]);
+						break;
+					}
+				}
+				finish._SetNode(&map[map_size - 1]);
+				map_size = newmap_size;
+			}
+			catch (...){
+				map_allocate::deallocate(newmap, newmap_size);
+				throw;
+			}
+
+		}
+
 		inline void create_map_and_node(size_type n){
 			if (n == 0) return;
-			int mapelementNum = n / Bufsize + 1;//初始化map元素的每个， 每一个元素维护这一个Bufsize个元素的一维数组
-
+		//	int mapelementNum = n / Bufsize + 1;//初始化map元素的每个， 每一个元素维护这一个Bufsize个元素的一维数组
+			int mapelementNum = n%Bufsize != 0 ? n / Bufsize + 1 : n / Bufsize;
 			//先初始化map
 			if (mapelementNum > map_size) map_size = mapelementNum + 2;
 			try{
@@ -386,6 +536,7 @@ using namespace CJH;
 			finish._SetCur(*(map + mapelementNum));
 		}
 		inline  void init_map(){
+			if (map_size == 0)return;
 			try{
 				map = map_allocate::allocate(map_size);
 			}
@@ -426,7 +577,53 @@ __CJH_END
 
 
 
-
+//测试代码2  主要对push_back和push_front
+//int main(){
+//	clock_t start, end;
+//	start = clock();
+//	CJH::deque<int, CJH::allocator<int>, 100>q;
+//	CJH::deque<int>::iterator it;
+//	int front = 0;
+//	int back = 0;
+//	srand(time(0));
+//	for (int i = 1; i <= CIRNUM; ++i){
+//		if (i == CIRNUM)
+//			i = i;
+//		if (i % 2 == 1){
+//			front++;
+//			q.push_back(1);
+//		}
+//		else{
+//			back++;
+//			q.push_front(1);
+//		}
+//	}
+//
+//	/*for (int j = 0; j < 10; ++j){
+//	for (int i = 1; i <= CIRNUM; ++i){
+//	if (i + 1 == CIRNUM)
+//	i = i;
+//	q.push_front(i);
+//	}
+//	for (int i = 1; i <= CIRNUM; ++i){
+//	if (i + 1 == CIRNUM)
+//	i = i;
+//	q.push_back(i);
+//	}
+//	}*/
+//	end = clock();
+//	cout << "time = " << end - start << endl;
+//	cout << "front = " << front << "\t" << "back = " << back << endl;
+//	//	it = q.begin();
+//	int i = 0;
+//	/*for (it; it != q.end(); ++it){
+//	++i;
+//	}*/
+//	//	cout << i << endl;
+//	//	CJH::copy(q.begin(), q.end(), ostream_iterator<int>(cout, "\n"));
+//	cout << "time = " << end - start << endl;
+//	return 0;
+//}
 
 
 
