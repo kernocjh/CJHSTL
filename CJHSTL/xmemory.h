@@ -108,7 +108,49 @@ __CJH_BEGIN
 		}
 	}
 
+	
 
+	template<class Forward_iterator1, class Forward_iterator2>
+	inline void iter_swap(Forward_iterator1 x, Forward_iterator2 y){
+		typedef iterator_traits<Forward_iterator1>::value_type value_type;
+		value_type tmp(*x);
+		*x = *y;
+		*y = tmp;
+	}
+
+	template<class _Ty>
+	inline void swap(_Ty&x, _Ty& y){
+		_Ty tmp(x);
+		x = y;
+		y = tmp;
+	}
+
+	template<class Bidirectional_iterator>
+	inline void reverse(Bidirectional_iterator first, Bidirectional_iterator last){
+		while (first != last && first != --last){
+			iter_swap(first++, last);
+		}
+	}
+
+	template<class Forward_iterator>
+	inline Forward_iterator rotate(Forward_iterator first, Forward_iterator n_first, Forward_iterator last){
+		if (first == n_first) return last;
+		if (n_first == last) return first;
+		Forward_iterator next = n_first;
+		do{
+			iter_swap(first++, next++);
+			if (first == n_first) n_first = next;
+		} while (next != last);
+
+		Forward_iterator ret = first;
+		for (next = n_first; next != last;){
+			iter_swap(first++, next++);
+			if (first == n_first)n_first = next;
+			else if (next == last) next = n_first;
+		}
+
+		return ret;
+	}
 
 __CJH_END
 #endif

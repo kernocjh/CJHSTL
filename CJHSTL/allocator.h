@@ -44,10 +44,6 @@ __CJH_BEGIN
 		static alloc_default _Alloc_default;
 		static alloc_malloc _Alloc_malloc;
 	public:
-
-		allocator(){
-			cout << "allocator 构造";
-		}
 		static pointer allocate(size_type n){
 			if (0 == n || n > __MAX_BYTES){
 				return (pointer)_Alloc_malloc.allocate(n);
@@ -103,6 +99,10 @@ __CJH_BEGIN
 
 		static pointer address(reference value){
 			return (pointer)&value;
+		}
+	private:
+		allocator(){
+			cout << "allocator 构造";
 		}
 	};
 

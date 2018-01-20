@@ -90,7 +90,7 @@ using namespace CJH;
 		}
 
 		difference_type operator-(const iterator &x){
-			return this->ptr - x.ptr;
+			return difference_type(this->ptr - x.ptr);
 		}
 
 		/*bool operator = (const iterator){
@@ -113,7 +113,7 @@ using namespace CJH;
 		typedef size_t size_type;
 		typedef _vector_iterator<_Ty, Alloc, bidirectinal_iterator_tag> iterator;
 		typedef typename iterator::difference_type difference_type;
-		
+		typedef vector<_Ty, Alloc> self;
 	protected:
 		iterator start;
 		iterator finish;
@@ -186,13 +186,15 @@ using namespace CJH;
 			end_of_storage = start + n;
 		}
 
-		template<class Iter,
+		
+
+		/*template<class Iter,
 			typename value = iterator_traits<Iter>::value_type>
 		vector(Iter first, Iter last){
 
-		}
+		}*/
 
-		vector(const vector<_Ty>& v){
+		vector(const self& v){
 			pointer_type ptr;
 			size_type newsize(CJH::addressof(*(v.end_of_storage)) - CJH::addressof(*(v.start)));
 			size_t nbyte = newsize * sizeof(_Ty);
@@ -219,6 +221,39 @@ using namespace CJH;
 			end_of_storage = start + newsize;
 		}
 
+		self& operator=(const self& v){
+			if (this == &v) return *this;
+
+
+			pointer_type ptr;
+			size_type newsize(CJH::addressof(*(v.end_of_storage)) - CJH::addressof(*(v.start)));
+			size_t nbyte = newsize * sizeof(_Ty);
+			try{
+				ptr = Alloc::allocate(nbyte);
+			}
+			catch (...){
+				Alloc::deallocate(ptr, nbyte);
+				throw;
+			}
+
+			iterator newstart(ptr);
+			iterator newfinish;
+			try{
+				newfinish = CJH::uninitialized_copy(v.start, v.finish, newstart);
+			}
+			catch (...){
+				CJH::destroy(newstart, newfinish);
+				Alloc::deallocate(ptr, nbyte);
+				throw;
+			}
+			clear();
+			deallocate();
+			start = newstart;
+			finish = newfinish;
+			end_of_storage = start + newsize;
+			return *this;
+		}
+
 		~vector(){
 			clear();
 			deallocate();
@@ -233,13 +268,13 @@ using namespace CJH;
 			return finish;
 		}
 
-		size_type size(){  // 完成
+		size_type size() const{  // 完成
 			return size_type(CJH::addressof(*finish) - CJH::addressof(*start));
 		}
 		size_type capacity() { // 完成
 			return size_type(CJH::addressof(*end_of_storage) - CJH::addressof(*start));
 		}
-		bool empty(){  // 完成
+		bool empty() const{  // 完成
 			return start == finish;
 		}
 
@@ -403,6 +438,17 @@ using namespace CJH;
 			finish = start;
 		}
 
+		void swap(self& v){
+			iterator tmpstart = v.start;
+			iterator tmpfinish = v.finish;
+			iterator tmpend_of_storage = v.end_of_storage;
+			v.start = start;
+			v.finish = finish;
+			v.end_of_storage = end_of_storage;
+			start = tmpstart;
+			finish = tmpfinish;
+			end_of_storage = tmpend_of_storage;
+		}
 		//vector() : start(0), finish(0), end_of_storage(0){}
 	
 	};

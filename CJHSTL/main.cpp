@@ -1,65 +1,67 @@
 #include "vector.h"
-#include "list.h"
 #include "deque.h"
-#include <ctime>
+#include "list.h"
+#include "stack.h"
+#include "queue.h"
 #include <iostream>
 #include <list>
 #include <vector>
+#include <queue>
 #include <string>
 #include <set>
 #include <deque>
+#include <ctime>
 #include <map>
+#include <stack>
 #include <iterator>
 #include <unordered_set>
 
 using namespace std;
 
-#define CIRNUM 51304515
-
-
-int main(){
-	clock_t start, end;
-	start = clock();
-	CJH::deque<int,CJH::allocator<int>,100>q;
-	CJH::deque<int>::iterator it;
-	int front = 0;
-	int back = 0;
-	srand(time(0));
-	for (int i = 1; i <= CIRNUM; ++i){
-		if (i == CIRNUM)
-			i = i;
-		if (i % 2 == 1){
-			front++;
-			q.push_back(1);
-		}
-		else{
-			back++;
-			q.push_front(1);
-		}
+class A{
+public:
+	static int a;
+	A(){
+		cout << "默认构造函数\n";
 	}
 
-	/*for (int j = 0; j < 10; ++j){
-		for (int i = 1; i <= CIRNUM; ++i){
-			if (i + 1 == CIRNUM)
-				i = i;
-			q.push_front(i);
-		}
-		for (int i = 1; i <= CIRNUM; ++i){
-			if (i + 1 == CIRNUM)
-				i = i;
-			q.push_back(i);
-		}
-	}*/
-	end = clock();
-	cout << "time = "<<end - start << endl;
-	cout << "front = " << front << "\t" << "back = " << back << endl;
-//	it = q.begin();
-	int i = 0;
-	/*for (it; it != q.end(); ++it){
-		++i;
-	}*/
-//	cout << i << endl;
-//	CJH::copy(q.begin(), q.end(), ostream_iterator<int>(cout, "\n"));
-	cout << "time = "<<end - start << endl;
+	A& operator=(const A& a){
+		cout << "Copy Assignment\n";
+		return *this;
+	}
+
+	A(const A& a){
+		cout << "复制构造函数\n";
+	}
+	~A(){
+		cout << "析构函数\n";
+	}
+};
+
+int A::a = 5;
+
+#define CIRNUM 500000
+int main(){
+	set<int> s;
+	clock_t start, end;
+	start = clock(); CJH::vector<int> v;
+	
+//	CJH::priority_queue<int,CJH::vector<int>,CJH::greater<int> > pq;
+	std::priority_queue<int> pq;
+	srand(time(0));
+	for (int i = 0; i < CIRNUM; ++i){
+		int num = rand() % CIRNUM;
+	//	cout << num << " ";
+		pq.push(num);
+	}
+	cout << endl;
+	for (int i = 0; i < CIRNUM; ++i){
+	//	cout << pq.top() << "  size = " << pq.size() << endl;
+		pq.pop();
+	}
+//	pq.pop();	I
+ 	end = clock();
+	cout << "time = " << end - start << endl;
+	cout << "size = " << pq.size() << endl;
 	return 0;
 }

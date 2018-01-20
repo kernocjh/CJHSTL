@@ -68,12 +68,12 @@ using namespace CJH;
 
 		}
 
-		_deque_iterator(const map_pointer pnode) :iterator_base(), 
+		_deque_iterator(const map_pointer pnode) :
 			node(pnode0),first(0), cur(0), last(0){
 
 		}
 		_deque_iterator(const map_pointer pnode,
-			pointer_type pfirst, pointer_type plast, pointer_type pcur) :iterator_base(),
+			pointer_type pfirst, pointer_type plast, pointer_type pcur) :iterator_base()
 			node(ptr), first(pfirst), last(plast), cur(pcur){
 
 		}
@@ -132,7 +132,7 @@ using namespace CJH;
 
 		}
 
-		self& operator ++(int){
+		self operator ++(int){
 			self tmp(*this);
 			++*this;
 			return tmp;
@@ -147,30 +147,32 @@ using namespace CJH;
 			--cur;
 			return *this;
 		}
-		self& operator --(int){
+		self operator --(int){
 			self tmp(*this);
 			--*this;
 			return tmp;
 		}
 
 		self& operator +=(difference_type n){
-			//检查目标是否在缓冲区
+			//检查目标是否在缓冲区, offset 是新位置相对于first的偏移量
 			difference_type offset = n + difference_type(cur - first);
 			if (offset >= 0 && offset < Bufsize){//在同缓冲区
 				cur += n;
 			}
 			else{
-				difference_type node_offset = offset > 0 ? offset / difference_type(Bufsize) :
-					offset / difference_type(Bufsize) - 1;
-
+			//	difference_type node_offset = (offset > 0 ? offset / difference_type(Bufsize) :
+			//		-difference_type((-offset - 1) / difference_type(Bufsize)) - 1);
+				difference_type node_offset = (offset > 0 ? offset / difference_type(Bufsize) :
+	-(-offset%difference_type(Bufsize) == 0 ? (-offset / difference_type(Bufsize)) : (-offset / difference_type(Bufsize) + 1)));
 				set_node(node + node_offset);
+			//	cur = first + (offset - node_offset*difference_type(Bufsize));
 				if (offset > 0){
 					cur = first;
-					cur += offset % Buffsize;
+					cur += offset % Bufsize;
 				}
 				else{
 					cur = first;
-					cur += -node_offset * Bufsize % Bufsize;
+					cur += -offset * Bufsize % Bufsize;
 				}
 			}
 			return *this;
@@ -180,23 +182,25 @@ using namespace CJH;
 			return *this += -n;
 		}
 
-		self& operator+(int n) const{
+		self operator+(int n) const{
 			self tmp = *this;
 			tmp += n;
 			return tmp;
 		}
 
-		self& operator-(int n) const{
+		self operator-(int n) const{
 			self tmp = *this;
 			tmp -= n;
 			return tmp;
 		}
 
 		difference_type operator-(const self& it) const{
-			difference_type off_node(difference_type(this->node) - difference_type(it.node));
-			difference_type offset1(difference_type(this->last) - difference_type(this->cur));
-			difference_type offset2(difference_type(it->cur) - difference_type(it->first));
-			return difference_type(Bufsize)*off_node + offset1 + offset2;
+			//这里需要注意offset1中减数迭代器
+			//而offset2中为被减数迭代器里面的内容
+			difference_type off_node(difference_type(_GetNode() - it._GetNode()));
+			difference_type offset1(difference_type(_GetCur()-_GetFirst()));
+			difference_type offset2(difference_type(it._GetLast() - it._GetCur()));
+			return difference_type(Bufsize)*(off_node - 1) + offset1 + offset2;
 		}
 
 		void _SetNode(map_pointer _node){
@@ -226,6 +230,13 @@ using namespace CJH;
 
 		pointer_type _GetCur() const{
 			return this->cur;
+		}
+
+		void _Swap(self& x){
+			CJH::swap(node, x.node);
+			CJH::swap(first, x.first);
+			CJH::swap(last, x.last);
+			CJH::swap(cur, x.cur);
 		}
 	private:
 		map_pointer node;
@@ -258,6 +269,7 @@ using namespace CJH;
 
 		typedef _deque_iterator<_Ty, data_allocate,
 			randow_access_iterator_tag, Bufsize> iterator;
+		typedef typename iterator::difference_type difference_type;
 		typedef deque<_Ty, Alloc,Bufsize> self;
 	public:
 		deque() : map_size(0), start(),finish(){
@@ -284,11 +296,83 @@ using namespace CJH;
 			destroy_map();
 		}
 
-		deque(const self& x){
-
+		deque(const self& x):map_size(x.map_size){
+			size_type offCur = 0;
+			try{
+				map = map_allocate::allocate(x.map_size);
+				size_type counter = 0;
+				for (offCur = 0; offCur < x.map_size; ++offCur){
+					if (x.map[offCur] != NULL){
+						map[offCur] = data_allocate::allocate();
+						++counter;
+						if (counter == 1){
+							start._SetNode(&map[offCur]);
+							start._SetFirst(map[offCur]);
+							start._SetLast(map[offCur] + Bufsize);
+							start._SetCur(map[offCur] + (x.start._GetCur() - x.start._GetFirst()));
+						}
+					}
+					else{
+						map[offCur] = NULL;
+					}
+				}
+				finish = CJH::uninitialized_copy(x.begin(), x.end(), start);
+			}
+			catch (...){
+				destroy_node();
+				destroy_map();
+				throw;
+			}
 		}
 
 		self& operator=(const self& x){
+			if (this == &x) return *this;
+			size_type offCur = 0;
+			map_pointer oldmap = map;
+			size_type oldmap_size = map_size;
+			iterator oldstart = start;
+			iterator oldfinish = finish;
+			try{
+				map = map_allocate::allocate(x.map_size);
+				size_type counter = 0;
+				for (offCur = 0; offCur < x.map_size; ++offCur){
+					if (x.map[offCur] != NULL){
+						map[offCur] = data_allocate::allocate();
+						++counter;
+						if (counter == 1){
+							start._SetNode(&map[offCur]);
+							start._SetFirst(map[offCur]);
+							start._SetLast(map[offCur] + Bufsize);
+							start._SetCur(map[offCur] + (x.start._GetCur() - x.start._GetFirst()));
+						}
+					}
+					else{
+						map[offCur] = NULL;
+					}
+				}
+				finish = CJH::uninitialized_copy(x.begin(), x.end(), start);
+				CJH::destroy(oldstart, oldfinish);
+				for (size_type i = 0; i < map_size; ++i){
+					if (oldmap[i] != NULL){
+						data_allocate::deallocate(oldmap[i]);
+					}
+					oldmap[i] = NULL;
+				}
+				map_allocate::deallocate(oldmap, oldmap_size);
+				oldmap = NULL;
+
+			}
+			catch (...){
+				destroy_node();
+				destroy_map();
+				finish = oldfinish;
+				start = oldstart;
+				map_size = oldmap_size;
+				map = oldmap;
+				throw;
+			}
+
+
 			return *this;
 		}
 
@@ -313,43 +397,161 @@ using namespace CJH;
 		}
 
 		void pop_back(){
-
+			if (finish._GetCur() != finish._GetFirst()){
+				--finish;
+				CJH::destroy(CJH::addressof(*finish));
+			}
+			else{
+				map_pointer node = finish._GetNode();
+				--finish;
+				CJH::destroy(CJH::addressof(*finish));
+				data_allocate::deallocate(*node);
+				*node = NULL;
+			}
 		}
 
 		void pop_front(){
 
+			//if (empty())  将会抛出编译错误
+
+			CJH::destroy(CJH::addressof(*start));
+			if (start._GetCur() + 1 != start._GetLast()){
+				++start;
+			}
+			else{
+				map_pointer node = start._GetNode();
+				++start;
+				data_allocate::deallocate(*node);
+				*node = NULL;
+			}
 		}
 
 		iterator erase(iterator position){
-
+			erase(position, position + 1);
 		}
 
 		iterator erase(iterator first, iterator last){
-
+			if (first == start&&last == finish){
+				clear();
+				return finish;
+			}
+			else{
+				difference_type diff = last - first;
+				CJH::destroy(first, last);
+				difference_type elementnum_before = first - start;  //计算删除区间之前的元素
+				difference_type elementnum_last = finish - last;	//计算删除区间之后的元素
+				if (elementnum_before < elementnum_last){  //前面的元素少删除移动前面
+					iterator new_start = CJH::copy_backward(start, first, last);  // 将[start, first)之间的元素移动last之前  如 1 2 3 先复制 3 2 1
+					for (map_pointer node = start._GetNode(); node != new_start._GetNode(); ++node){ //回收多余的空间
+						data_allocate::deallocate(*node);
+						*node = NULL;
+					}
+					start = new_start;
+				}
+				else{
+					iterator new_finish = CJH::copy(last, finish, first); // 将[last, finish)之间的元素移动first之后 如 1 2 3 先复制 3 2 1
+					for (map_pointer node = finish._GetNode(); node != new_finish._GetNode(); --node){
+						data_allocate::deallocate(*node);
+						*node = NULL;
+					}
+					finish = new_finish;
+				}
+				return start + elementnum_before;
+			}
 		}
 
 
 		iterator insert(iterator positon, const _Ty & value){
-
+			return insert(positon, 1, value);
 		}
 
-		void insert(iterator positon, size_type n, const _Ty & value){
+		iterator insert(iterator positon, size_type n, const _Ty & value){
+			difference_type elementnum_before = positon - start;
+			difference_type elementnum_last = finish - positon;
+			if (elementnum_before < elementnum_last){ //前面的元素少于后面的元素
+				//查看前方的声誉空间
+				size_type _Curoff = 0;
+				try{
+					for (_Curoff = 0; _Curoff < n; ++_Curoff)
+						push_front(value);
+				}
+				catch (...){
+					for (size_type i = 0; i < _Curoff; ++i){
+						pop_front();
+					}
+					throw;
+				}
 
-		}
+				CJH::reverse(begin(), begin() + n); 
+				CJH::rotate(begin(), begin() + n, begin() + n + elementnum_before);
+			}
+			else{
+				size_type _Curoff = 0;
+				try{
+					for (_Curoff = 0; _Curoff < n; ++_Curoff)
+						push_back(value);
+				}
+				catch (...){
+					for (size_type i = 0; i < _Curoff; ++i){
+						pop_back();
+					}
+					throw;
+				}
+				CJH::rotate(begin() + elementnum_before, begin() + elementnum_before + elementnum_last, end());
+			}
 
-
-		template<class InputIter>
-		void insert(InputIter first, InputIter last){
-
+			return start + elementnum_before + n;
 		}
 
 		template<class InputIter>
 		void insert(iterator position, InputIter first, InputIter last){
+			difference_type elementnum_before = position - start;
+			difference_type elementnum_last = finish - position;
+			if (elementnum_before < elementnum_last){ //前面的元素少于后面的元素
+				//查看前方的声誉空间
+				size_type _Curoff = 0;
+				try{
+					for (first; first != last; ++first){
+						push_front(*first);
+						++_Curoff;
+					}
+				}
+				catch (...){
+					for (size_type i = 0; i < _Curoff; ++i){
+						pop_front();
+					}
+					throw;
+				}
 
+				CJH::reverse(begin(), begin() + _Curoff);
+				CJH::rotate(begin(), begin() + _Curoff, begin() + _Curoff + elementnum_before);
+			}
+			else{
+				size_type _Curoff = 0;
+				try{
+					for (first; first != last; ++first){
+						push_back(*first);
+						++_Curoff;
+					}
+						
+				}
+				catch (...){
+					for (size_type i = 0; i < _Curoff; ++i){
+						pop_back();
+					}
+					throw;
+				}
+				CJH::rotate(begin() + elementnum_before, begin() + elementnum_before + elementnum_last, end());
+			}
 		}
 
 		void clear(){
-
+			CJH::destroy(start, finish);
+			for (map_pointer node = start._GetNode(); node != finish._GetNode(); ++node){
+				data_allocate::deallocate(*node);
+				*node = NULL;
+			}
+			start = finish;
 		}
 		iterator begin() const{
 			return iterator(start);
@@ -359,21 +561,39 @@ using namespace CJH;
 			return iterator(finish);
 		}
 
-		size_type size(){
-
+		reference_type back() const{
+			return (*(end() - 1));
+		}
+		reference_type front() const{
+			return (*(begin()));
+		}
+		size_type size() const{
+			return size_type(finish - start);
 		}
 
+		value_type& operator[] (int n){
+			return (*(begin() + n));
+		}
 		bool empty(){
-
+			return finish == start;
 		}
 
 
-		bool resize(const size_type n){
-
+		void resize(const size_type n){
+			if (size() == n) return;
+			else if (size() > n){
+				erase(begin() + 5, end());
+			}
+			else{
+				insert(end(), n - size(), value_type());
+			}
 		}
 
 		void swap(self& x){
-
+			CJH::swap(map, x.map);
+			CJH::swap(map_size, x.map_size);
+			start._Swap(x.start);
+			finish._Swap(x.finish);
 		}
 	protected:
 
@@ -468,16 +688,16 @@ using namespace CJH;
 			size_type newmap_size = map_size / 2 + 1 + map_size;
 			try{
 				newmap = map_allocate::allocate(newmap_size);
-				for (int i = 0; i < map_size; ++i){
+				for (size_type i = 0; i < map_size; ++i){
 					newmap[i] = map[i];
 				}
-				for (int i = map_size; i < newmap_size; ++i){
+				for (size_type i = map_size; i < newmap_size; ++i){
 					newmap[i] = NULL;
 				}
 				//更新 迭代器 start finish
 				destroy_map();
 				map = newmap;
-				for (int i = 0; i < map_size; ++i){
+				for (size_type i = 0; i < map_size; ++i){
 					if (map[i] != NULL){
 						start._SetNode(&map[i]);
 						break;
@@ -496,7 +716,7 @@ using namespace CJH;
 		inline void create_map_and_node(size_type n){
 			if (n == 0) return;
 		//	int mapelementNum = n / Bufsize + 1;//初始化map元素的每个， 每一个元素维护这一个Bufsize个元素的一维数组
-			int mapelementNum = n%Bufsize != 0 ? n / Bufsize + 1 : n / Bufsize;
+			size_type mapelementNum = n%Bufsize != 0 ? n / Bufsize + 1 : n / Bufsize;
 			//先初始化map
 			if (mapelementNum > map_size) map_size = mapelementNum + 2;
 			try{
@@ -507,7 +727,7 @@ using namespace CJH;
 				throw;
 			}
 
-			int elementinited = 1;
+			size_type elementinited = 1;
 			//在初始化每一个map的元素
 			try{
 				elementinited = 1;
@@ -517,7 +737,7 @@ using namespace CJH;
 
 			}
 			catch (...){
-				for (int i = 1; i < elementinited; ++i){
+				for (size_type i = 1; i < elementinited; ++i){
 					data_allocate::deallocate(map[i]);
 					map[i] = NULL;
 				}
@@ -542,6 +762,7 @@ using namespace CJH;
 			}
 			catch (...){
 				map_allocate::deallocate(map, map_size);
+				map = NULL;
 				throw;
 			}
 
@@ -552,12 +773,20 @@ using namespace CJH;
 
 		inline  void destroy_map(){
 			map_allocate::deallocate(map, map_size);
+			map = NULL;
 		}
 
 
 		inline void destroy_node(){
-			for (map_pointer node = start._GetNode(); node <= finish._GetNode(); ++node){
+		/*	for (map_pointer node = start._GetNode(); node <= finish._GetNode(); ++node){
 				data_allocate::deallocate(*node);
+				*node = NULL;
+			}*/
+			for (size_type i = 0; i < map_size; ++i){
+				if (map[i] != NULL){
+					data_allocate::deallocate(map[i]);
+				}
+				map[i] = NULL;
 			}
 		}
 	private:
@@ -569,8 +798,172 @@ using namespace CJH;
 __CJH_END
 #endif _DEQUE_H__
 
+//inset 函数综合测试
+//std::deque<int> dq;
+//dq.insert(dq.end(), dq.begin(), dq.end());
+//CJH::deque<int, CJH::allocator<int>, 1> q;
+//
+//q.push_back(1);
+//
+//CJH::copy(q.begin(), q.end(), ostream_iterator<int>(cout, " "));
+//cout << endl;
+//CJH::list<int> v(10, 250);
+//q.insert(q.begin(), v.begin(), v.end());
+////	q.push_front(7);
+//CJH::copy(q.begin(), q.end(), ostream_iterator<int>(cout, " ")); cout << endl;
+//CJH::vector<int> v1(5, 3600);
+//q.insert(q.begin() + 7, v1.begin(), v1.end());
+//CJH::copy(q.begin(), q.end(), ostream_iterator<int>(cout, " ")); cout << endl;
+//
+//CJH::copy(q.end() - 9, q.end(), ostream_iterator<int>(cout, " ")); cout << endl;
+//q.insert(q.end() - 11, v1.begin(), v1.end());
+//CJH::copy(q.begin(), q.end(), ostream_iterator<int>(cout, " ")); cout << endl;
+
+//主要是对erase 和 clear和删除有关的函数做测试
+//#define CIRNUM 100
+//class A{
+//public:
+//	int i;
+//	static int counter;
+//	int *num;
+//	A() :i(++counter){
+//		num = new int[CIRNUM];
+//		cout << "i = " << i << "\t默认构造函数 counter = " << counter << "\n";
+//	}
+//
+//	A(const A& a){
+//		++counter;
+//		this->i = a.i;
+//		this->num = new int[CIRNUM];
+//		cout << "i = " << i << "\t复制构造函数 counter = " << counter << "\n";
+//	}
+//
+//	A& operator =(const A& a){
+//		++counter;
+//		this->i = a.i;
+//		cout << "i = " << i << "\tCopy Assigment函数 counter = " << counter << "\n";
+//		return *this;
+//	}
+//	~A(){
+//		delete[]num;
+//		cout << "i = " << i << "\t析构函数 counter = " << counter << "\n";
+//		--counter;
+//	}
+//};
+//
+//ostream& operator <<(ostream& os, const A& a){
+//	os << a.i;
+//	return os;
+//}
+//
+//int A::counter = 0;
+//int main(){
+//	CJH::deque<int, CJH::allocator<int>, 100> p;
+//	for (int i = 0; i < CIRNUM; ++i)
+//		p.push_back(i);
+//	CJH::copy(p.begin(), p.end(), ostream_iterator<int>(cout, " "));
+//	cout << endl;
+//	p.erase(p.begin() + 10, p.begin() + 20);
+//	CJH::copy(p.begin(), p.end(), ostream_iterator<int>(cout, " "));
+//
+//	cout << endl;
+//	A a;
+//	CJH::deque<A, CJH::allocator<A>, 100> q;
+//	cout << q.size() << endl;
+//	for (int i = 0; i < CIRNUM; ++i)
+//		q.push_back(a);
+//
+//	cout << q.size() << endl;
+//	CJH::copy(q.begin(), q.end(), ostream_iterator<A>(cout, " "));
+//
+//	cout << endl;
+//	q.erase(q.begin(), q.begin() + 5);
+//	cout << q.size() << endl;
+//	q.push_front(a);
+//	q.push_back(a);
+//	CJH::copy(q.begin(), q.end(), ostream_iterator<A>(cout, " "));
+//	cout << q.size() << endl;
+//	cout << endl;
+//	return 0;
+//}
 
 
+
+//主要是对A做专项测试随机测试  还有就是A预期析构函数测试
+//#define CIRNUM 100000000
+//class A{
+//public:
+//	int i;
+//	static int counter;
+//	A() :i(++counter){
+//		cout << "i = " << i << "\t默认构造函数 counter = " << counter << "\n";
+//	}
+//
+//	A(const A& a){
+//		++counter;
+//		this->i = a.i;
+//		cout << "i = " << i << "\t复制构造函数 counter = " << counter << "\n";
+//	}
+//
+//	A& operator =(const A& a){
+//		++counter;
+//		this->i = a.i;
+//		cout << "i = " << i << "\tCopy Assigment函数 counter = " << counter << "\n";
+//		return *this;
+//	}
+//	~A(){
+//		--counter;
+//		cout << "i = " << i << "\t析构函数 counter = " << counter << "\n";
+//	}
+//};
+//
+//ostream& operator <<(ostream& os, const A& a){
+//	os << a.i;
+//	return os;
+//}
+//
+//int A::counter = 0;
+//int main(){
+//
+//	CJH::deque<int, CJH::allocator<int>, 3> q;
+//	srand(time(0));
+//	for (int i = 0; i < CIRNUM; ++i){
+//
+//		int n = rand() % CIRNUM / 2;
+//		for (int j = 0; j < n; ++j){
+//			int num = rand() % 2;
+//			if (num == 0)
+//				q.push_back(rand() % CIRNUM);
+//			else if (num == 1)
+//				q.push_front(rand() % CIRNUM);
+//		}
+//
+//		for (int j = 0; j < n; ++j){
+//			int num = rand() % 3;
+//			if (num == 1)
+//				q.pop_back();
+//			else if (num == 2)
+//				q.pop_front();
+//			else;
+//		}
+//	}
+//	CJH::copy(q.begin(), q.end(), ostream_iterator<int>(cout, " "));
+//	cout << endl;
+//	/*A a;
+//	cout << a;
+//	CJH::deque<A,CJH::allocator<A>,99> q;
+//	for (int i = 0; i < CIRNUM; ++i)
+//	q.push_back(a);
+//	CJH::copy(q.begin(), q.end(), ostream_iterator<A>(cout, " "));
+//	cout << endl;
+//	for (int i = 0; i < CIRNUM; ++i)
+//	q.pop_back();
+//	q.push_front(a);
+//	q.push_back(a);
+//	CJH::copy(q.begin(), q.end(), ostream_iterator<A>(cout, " "));*/
+//	cout << endl;
+//	return 0;
+//}
 
 
 
@@ -578,53 +971,50 @@ __CJH_END
 
 
 //测试代码2  主要对push_back和push_front
-//int main(){
-//	clock_t start, end;
-//	start = clock();
-//	CJH::deque<int, CJH::allocator<int>, 100>q;
-//	CJH::deque<int>::iterator it;
-//	int front = 0;
-//	int back = 0;
-//	srand(time(0));
-//	for (int i = 1; i <= CIRNUM; ++i){
-//		if (i == CIRNUM)
-//			i = i;
-//		if (i % 2 == 1){
-//			front++;
-//			q.push_back(1);
-//		}
-//		else{
-//			back++;
-//			q.push_front(1);
-//		}
+//clock_t start, end;
+//start = clock();
+//CJH::deque<int, CJH::allocator<int>, 100>q;
+//CJH::deque<int>::iterator it;
+//int front = 0;
+//int back = 0;
+//srand(time(0));
+//for (int i = 1; i <= CIRNUM; ++i){
+//	if (i == CIRNUM)
+//		i = i;
+//	if (i % 2 == 1){
+//		front++;
+//		q.push_back(1);
 //	}
-//
-//	/*for (int j = 0; j < 10; ++j){
-//	for (int i = 1; i <= CIRNUM; ++i){
-//	if (i + 1 == CIRNUM)
-//	i = i;
-//	q.push_front(i);
+//	else{
+//		back++;
+//		q.push_front(1);
 //	}
-//	for (int i = 1; i <= CIRNUM; ++i){
-//	if (i + 1 == CIRNUM)
-//	i = i;
-//	q.push_back(i);
-//	}
-//	}*/
-//	end = clock();
-//	cout << "time = " << end - start << endl;
-//	cout << "front = " << front << "\t" << "back = " << back << endl;
-//	//	it = q.begin();
-//	int i = 0;
-//	/*for (it; it != q.end(); ++it){
-//	++i;
-//	}*/
-//	//	cout << i << endl;
-//	//	CJH::copy(q.begin(), q.end(), ostream_iterator<int>(cout, "\n"));
-//	cout << "time = " << end - start << endl;
-//	return 0;
 //}
-
+//
+///*for (int j = 0; j < 10; ++j){
+//for (int i = 1; i <= CIRNUM; ++i){
+//if (i + 1 == CIRNUM)
+//i = i;
+//q.push_front(i);
+//}
+//for (int i = 1; i <= CIRNUM; ++i){
+//if (i + 1 == CIRNUM)
+//i = i;
+//q.push_back(i);
+//}
+//}*/
+//end = clock();
+//cout << "time = " << end - start << endl;
+//cout << "front = " << front << "\t" << "back = " << back << endl;
+////	it = q.begin();
+//int i = 0;
+///*for (it; it != q.end(); ++it){
+//++i;
+//}*/
+////	cout << i << endl;
+////	CJH::copy(q.begin(), q.end(), ostream_iterator<int>(cout, "\n"));
+//cout << "time = " << end - start << endl;
+//
 
 
 

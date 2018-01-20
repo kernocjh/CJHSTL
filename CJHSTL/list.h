@@ -209,19 +209,29 @@ __CJH_BEGIN
 
 			_Mergesort(first, last);
 			_Mergesort(temp.begin(), temp.end());
-			/*CJH::copy(begin(), end(), ostream_iterator<int>(cout, " "));
-			std::cout << std::endl;
-			CJH::copy(temp.begin(), temp.end(), ostream_iterator<int>(cout, " "));
-			std::cout << std::endl;*/
+/*CJH::copy(begin(), end(), ostream_iterator<int>(cout, " "));
+std::cout << std::endl;
+CJH::copy(temp.begin(), temp.end(), ostream_iterator<int>(cout, " "));
+std::cout << std::endl;*/
 			merge(temp);
-			/*CJH::copy(begin(), end(), ostream_iterator<int>(cout, " "));
-			cout << endl<< std::endl;*/
+/*CJH::copy(begin(), end(), ostream_iterator<int>(cout, " "));
+cout << endl<< std::endl;*/
 		}
 	public:
 		list() :_Mycount(0){
 			init_list();
 		}
 
+		list(size_type n, const _Ty& value) :list(){
+			try{
+				for (size_type i = 0; i < n;++i)
+					insert(end(), value);
+			}
+			catch (...){
+				clear();
+				throw;
+			}
+		}
 		template<class Iter, typename value = CJH::iterator_traits<Iter>::value_type>
 		list(Iter first, Iter last):list(){
 			try{
@@ -238,6 +248,8 @@ __CJH_BEGIN
 
 		list(const self& list){
 			try{
+
+				init_list();
 				self::iterator first = list.begin();
 				self::iterator last = list.end();
 				while (first != last){
@@ -275,8 +287,8 @@ __CJH_BEGIN
 		iterator end(){
 			return iterator(node);
 		}
-		iterator rbegin();
-		iterator rend();
+		//iterator rbegin();
+		//iterator rend();
 		size_type size(){
 			return size_type(_Mycount);
 		}
@@ -361,14 +373,18 @@ __CJH_BEGIN
 				next = first;
 			}
 
-			//以下编程方式具有大bug  因为++next导致  next指向end指针和first做比较
-			/*while (first != last){
-				iterator next = first;
-				if (*first == *(++next)){
-					first = erase(first);
-				}
-				++first;
-			}*/
+//以下编程方式具有大bug  因为++next导致  next指向end指针和first做比较
+/*while (first != last){
+	iterator next = first;
+	if (*first == *(++next)){
+		first = erase(first);
+	}
+	++first;
+}*/
+		}
+
+		void resize(const size_type n){
+
 		}
 		void reverse(){
 			if (node->next == node || node->next->next == node) return;
@@ -471,27 +487,6 @@ __CJH_BEGIN
 		}
 		void merge(self& list){
 			merge(list, CJH::less<_Ty>());
-			/*if (this == &list) return;
-			size_type tmpcount = list.size();
-			iterator first1 = this->begin();
-			iterator first2 = list.begin();
-			iterator last1 = this->end();
-			iterator last2 = list.end();
-			while (first1 != last1 && first2 != last2){
-				if (*first1 <= *first2){
-					++first1;
-				}
-				else if (*first1 > *first2){
-					iterator old = first2;
-					transfer(first1, old, ++first2);
-				}
-			}
-			if (first2 != last2){
-				transfer(first1, first2, last2);
-			}
-
-			this->_Mycount += tmpcount;
-			list._Mycount = 0;*/
 		}
 
 		iterator find(iterator first, iterator last, const _Ty& value){
