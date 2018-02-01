@@ -20,7 +20,7 @@ __CJH_BEGIN
 		__list_node(const _Ty& x) :data(x), prev(NULL), next(NULL){
 
 		}
-		__list_node() :prev(NULL), next(NULL){
+		__list_node() :prev(NULL), next(NULL), data(){
 
 		}
 
@@ -45,8 +45,8 @@ __CJH_BEGIN
 
 
 		//typedef _list_iterator<_Ty> iterator;  探究一下为什么这样声明会发生错误
-		typedef _list_iterator<_Ty, Alloc, Category> iterator;
-
+		//typedef _list_iterator<_Ty, Alloc, Category> iterator;
+		typedef _list_iterator<_Ty, Alloc, Category> self;
 		typedef __list_node<_Ty>* list_type;
 
 	private:
@@ -56,50 +56,55 @@ __CJH_BEGIN
 		_list_iterator(list_type t = 0) :iterator_base<Category, _Ty>(), node(t){
 		}
 
-		_list_iterator(const iterator& x) :node(x.node){
+		_list_iterator(const self& x) :node(x.node){
 
+		}
+
+		self& operator=(const self& x){
+			node = x.node;
+			return *this;
 		}
 
 		~_list_iterator(){
 			//Alloc::deallocate(sizeof(__list_node<_Ty>));
 		}
 
-		bool operator ==(const iterator& x){
-			return this->node == x.node;
+		bool operator ==(const self& x){
+			return node == x.node;
 		}
 
-		bool operator != (const iterator &x){
-			return this->node != x.node;
+		bool operator != (const self &x){
+			return node != x.node;
 		}
 
 		reference_type operator *(){ // 若node为NULL
-			return (this->node->data);
+			return (node->data);
 		}
 
 		pointer_type operator ->(){
 			return (&(operator*()));
 		}
 
-		iterator& operator++(){
+		self& operator++(){
 			node = node->next;
 			return *this;
 		}
 
-		iterator operator++(int){
-			iterator tmp;
-			tmp = *this;
+		self operator++(int){
+			self tmp(*this);
+			//tmp = *this;
 			++(*this);
 			return tmp;
 		}
 
-		iterator& operator--(){
+		self& operator--(){
 			node = node->prev;
 			return *this;
 		}
 
-		iterator operator--(int){
-			iterator tmp;
-			tmp = *this;
+		self operator--(int){
+			self tmp(*this);
+			//tmp = *this;
 			--(*this);
 			return tmp;
 		}
@@ -116,7 +121,7 @@ __CJH_BEGIN
 		class Alloc = CJH::allocator<list_node> >
 	class listnode_allocator{
 	public:
-		typedef typename Alloc::value_type value_type;
+		typedef typename Alloc::value_type value_type;  //以一个node为标准
 		typedef typename Alloc::pointer pointer_type;
 		static pointer_type allocate(){
 			return Alloc::allocate(sizeof(value_type));
@@ -141,33 +146,42 @@ __CJH_BEGIN
 		typedef node_type* list_type;
 		typedef list<_Ty, Alloc> self;
 	private:
-	protected:
 		list_type node;
 		size_type _Mycount;
+	protected:
 		list_type alloc_node(){
 			// allocate the space
 			return Alloc::allocate();
 		}
-		
+
+		void free_node(list_type ptr){
+			--_Mycount;
+			//call destruct function, deallocate the space of nodes
+			CJH::destroy(CJH::addressof(ptr->data));
+			Alloc::deallocate(ptr);
+			//一旦删除的节点是标志节点，一般就是调用了析构函数  又或者是节点删除错误
+			if (ptr == node) node = NULL;   
+		}
 		list_type create_node(const _Ty& value){
 			// construct a node
 			++_Mycount;
-			list_type ptr = alloc_node();
+			list_type ptr = NULL; 
+			try{
+				ptr = alloc_node();
+			}
+			catch (...){
+				Alloc::deallocate(ptr);
+				throw;
+			}
 			CJH::construct(CJH::addressof((ptr->data)), value);
 			return ptr;
 		}
 
-		void free_node(list_type ptr){
-			--_Mycount;
-			//deallocate the space of nodes
-			CJH::destroy(CJH::addressof(ptr->data));
-			Alloc::deallocate(ptr);
-		}
 
 
 	protected:
 		void init_list(){
-			node = alloc_node();
+			node = create_node(value_type());
 			node->prev = node;
 			node->next = node;
 			_Mycount = 0;
@@ -248,7 +262,6 @@ cout << endl<< std::endl;*/
 
 		list(const self& list){
 			try{
-
 				init_list();
 				self::iterator first = list.begin();
 				self::iterator last = list.end();
@@ -264,7 +277,7 @@ cout << endl<< std::endl;*/
 			}
 		}
 		self& operator=(const self& list){
-			if (this == &list) return this;
+			if (this == &list) return *this;
 			try{
 				self::iterator first = list.begin();
 				self::iterator last = list.end();
@@ -325,7 +338,7 @@ cout << endl<< std::endl;*/
 			prev_node->next = next_node;
 			next_node->prev = prev_node;
 			free_node(ptr);
-			return next_node;
+			return iterator(next_node);
 		}
 		iterator erase(iterator first, iterator last){
 			list_type cur = (list_type)first._MyNode();

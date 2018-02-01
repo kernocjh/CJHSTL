@@ -66,95 +66,6 @@ __CJH_BEGIN
 		Container c;
 	};
 
-	template<class Rnit, 
-			class Compare,
-			class difference_type = iterator_traits<Rnit>::difference_type>
-	void __adjust_heap(Rnit first, difference_type start, difference_type end, Compare cmp){
-		difference_type left_child = start * 2 + 1;
-		difference_type right_child = left_child + 1;
-		difference_type index = start;
-		if (left_child < end && cmp(*(first + index), *(first + left_child))) {
-			index = left_child;
-		}
-		if (right_child < end && cmp(*(first + index), *(first + right_child))) {
-			index = right_child;
-		}
-
-		if (index != start){
-			CJH::swap(*(first + start), *(first + index));
-			__adjust_heap(first, index, end, cmp);
-		}
-	}
-
-	template<class Rnit, 
-			class Compare>
-	void adjust_heap(Rnit first, Rnit last,Compare cmp){
-		typedef typename CJH::iterator_traits<Rnit>::value_type value_type;
-		typedef typename CJH::iterator_traits<Rnit>::difference_type difference_type;
-		difference_type len = last - first;
-		Rnit left_child = first;
-		__adjust_heap(first, 0, len, cmp);
-	}
-
-	template<class Rnit, 
-			class Compare>
-	void make_heap(Rnit first, Rnit last,Compare cmp){
-		typedef typename CJH::iterator_traits<Rnit>::value_type value_type;
-		typedef typename CJH::iterator_traits<Rnit>::difference_type difference_type;
-		difference_type len = last - first;
-		for (difference_type i = len / 2; i >= 0; --i){
-			adjust_heap(first + i, last, cmp);
-		}
-	}
-
-	template<class Rnit, 
-			class Compare>
-	void __push_heap(Rnit first, Rnit last, Compare cmp){
-		typedef typename CJH::iterator_traits<Rnit>::value_type value_type;
-		typedef typename CJH::iterator_traits<Rnit>::difference_type difference_type;
-		difference_type len = last - first;
-		difference_type last_node = len - 1;
-		difference_type parent = (last_node - 1) / 2;
-		if (last_node == 0) return;
-		else{
-			if (cmp(*(first + parent), *(first + last_node))){
-				CJH::swap(*(first + parent), *(first + last_node));
-				__push_heap(first, first + parent + 1, cmp);
-			}
-		}
-	}
-
-	template<class Rnit, 
-			class Compare>
-	void push_heap(Rnit first, Rnit last, Compare cmp){
-		__push_heap(first, last, cmp);
-	}
-
-	
-
-	//template<class Rnit, class Compare = less<iterator_traits<Rnit>::value_type> >
-	//void __pop_heap(Rnit first, difference_type start, difference_type end, Compare cmp){
-	//	typedef typename CJH::iterator_traits<Rnit>::value_type value_type;
-	//	typedef typename CJH::iterator_traits<Rnit>::difference_type difference_type;
-	//	difference_type left_child;
-	//}
-	template<class Rnit, 
-			class Compare>
-	void pop_heap(Rnit first, Rnit last, Compare cmp){
-		typedef typename CJH::iterator_traits<Rnit>::value_type value_type;
-		typedef typename CJH::iterator_traits<Rnit>::difference_type difference_type;
-		CJH::swap(*first, *--last);
-		difference_type len = last - first;
-		__adjust_heap(first, 0, len, cmp);
-	}
-
-	template<class Rnit, 
-			class Compare>
-	void sort_heap(Rnit first, Rnit last){
-
-	}
-
-
 	template<class _Ty, 
 			class Container=CJH::vector<_Ty>,
 			class Compare=CJH::less<_Ty> >
@@ -225,5 +136,110 @@ __CJH_BEGIN
 	};
 
 
+
+	template<class Rnit,
+	class Compare,
+	class difference_type = iterator_traits<Rnit>::difference_type>
+		void __adjust_heap(Rnit first, difference_type start, difference_type end, Compare cmp){
+			difference_type left_child = start * 2 + 1;
+			difference_type right_child = left_child + 1;
+			difference_type index = start;
+			if (left_child < end && cmp(*(first + index), *(first + left_child))) {
+				index = left_child;
+			}
+			if (right_child < end && cmp(*(first + index), *(first + right_child))) {
+				index = right_child;
+			}
+
+			if (index != start){
+				CJH::swap(*(first + start), *(first + index));
+				__adjust_heap(first, index, end, cmp);
+			}
+		}
+
+	template<class Rnit,
+	class Compare>
+		void adjust_heap(Rnit first, Rnit last, Compare cmp){
+			typedef typename CJH::iterator_traits<Rnit>::value_type value_type;
+			typedef typename CJH::iterator_traits<Rnit>::difference_type difference_type;
+			difference_type len = last - first;
+			Rnit left_child = first;
+			__adjust_heap(first, 0, len, cmp);
+		}
+
+	template<class Rnit,
+	class Compare>
+		void make_heap(Rnit first, Rnit last, Compare cmp){
+			typedef typename CJH::iterator_traits<Rnit>::value_type value_type;
+			typedef typename CJH::iterator_traits<Rnit>::difference_type difference_type;
+			difference_type len = last - first;
+			for (difference_type i = len / 2; i >= 0; --i){
+				adjust_heap(first + i, last, cmp);
+			}
+		}
+
+	template<class Rnit,
+	class Compare>
+		void __push_heap(Rnit first, Rnit last, Compare cmp){
+			typedef typename CJH::iterator_traits<Rnit>::value_type value_type;
+			typedef typename CJH::iterator_traits<Rnit>::difference_type difference_type;
+			difference_type len = last - first;
+			difference_type last_node = len - 1;
+			difference_type parent = (last_node - 1) / 2;
+			if (last_node == 0) return;
+			else{
+				if (cmp(*(first + parent), *(first + last_node))){
+					CJH::swap(*(first + parent), *(first + last_node));
+					__push_heap(first, first + parent + 1, cmp);
+				}
+			}
+		}
+
+	template<class Rnit,
+	class Compare>
+		void push_heap(Rnit first, Rnit last, Compare cmp){
+			__push_heap(first, last, cmp);
+		}
+
+	template<class Rnit,
+	class Compare>
+		void pop_heap(Rnit first, Rnit last, Compare cmp){
+			typedef typename CJH::iterator_traits<Rnit>::value_type value_type;
+			typedef typename CJH::iterator_traits<Rnit>::difference_type difference_type;
+			CJH::swap(*first, *--last);
+			difference_type len = last - first;
+			__adjust_heap(first, 0, len, cmp);
+		}
+
+	template<class Rnit,
+	class Compare>
+		void sort_heap(Rnit first, Rnit last){
+
+		}
+
+
 __CJH_END
 #endif //__QUEUE_H__
+
+
+
+//clock_t start, end;
+//start = clock(); CJH::vector<int> v;
+//
+//CJH::priority_queue<int, CJH::vector<int>, CJH::less<int> > pq;
+////	std::priority_queue<int> pq;
+//srand(time(0));
+//for (int i = 0; i < CIRNUM; ++i){
+//	int num = rand() % CIRNUM;
+//	//	cout << num << " ";
+//	pq.push(num);
+//}
+//cout << endl;
+//for (int i = 0; i < CIRNUM; ++i){
+//	cout << pq.top() << "  size = " << pq.size() << endl;
+//	pq.pop();
+//}
+////	pq.pop();	I
+//end = clock();
+//cout << "time = " << end - start << endl;
+//cout << "size = " << pq.size() << endl;

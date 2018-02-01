@@ -21,82 +21,78 @@ using namespace CJH;
 		typedef typename _Mybase::reference_type reference_type;
 		typedef typename _Mybase::iterator_category iterator_category;
 
-		typedef _vector_iterator<_Ty> iterator;
-
+		typedef _vector_iterator<_Ty, Alloc, Category> iterator;
+		typedef _vector_iterator<_Ty, Alloc, Category> self;
 		pointer_type ptr;
 	public:
 
 
 //		iterator operator =(const )
-		_vector_iterator(_Ty* t = 0) : iterator_base<Category, _Ty>(), ptr(t){
-			//ptr = t;
+		_vector_iterator(const pointer_type t = 0) : iterator_base<Category, _Ty>(), ptr(t){
 		}
+
+		_vector_iterator(const self& x) :ptr(x.ptr) {
+
+		}
+
 		~_vector_iterator(){
 
 		}
 
-		//iterator& operator=(const iterator& x){
-		//	return *this;
-		//}
+		iterator& operator=(const iterator& x){
+			ptr = x.ptr;
+			return *this;
+		}
 
-		bool operator == (const iterator& x) const{
+		bool operator == (const self& x) const{
 			return this->ptr == x.ptr;
 		}
-		bool operator != (const iterator& x) const{
+		bool operator != (const self& x) const{
 			return this->ptr != x.ptr;
 		}
 
 		value_type& operator *() const{ return *ptr; }
 		pointer_type operator ->() const{ return ptr; }
 
-		iterator& operator ++(){
+		self& operator ++(){
 			ptr++;
 			return *this;
 		}
 
-		iterator operator++ (int){
-			iterator tmp = *this;
+		self operator++ (difference_type){
+			self tmp = *this;
 			++*this;
 			return tmp;
 		}
 
-		iterator& operator --(){
+		self& operator --(){
 			--ptr;
 			return *this;
 		}
 
-		iterator operator--(int){
-			iterator tmp = *this;
+		self operator--(difference_type){
+			self tmp = *this;
 			--*this;
 			return tmp;
 		}
 
-		iterator operator+(int n){
+		self operator+(difference_type n){
 			/*ptr = ptr + n;
 			iterator tmp = *this;
 			ptr = ptr - n;*/
-			return iterator(ptr + n);
+			return self(ptr + n);
 		}
 
-		/*difference_type operator+(const iterator &x){
-			return this->ptr  x.ptr;
-		}*/
-
-		iterator operator-(int n){
+		self operator-(difference_type n){
 			/*ptr = ptr - n;
 			iterator tmp = *this;
 			ptr = ptr + n;*/
-			return iterator(ptr - n);
+			return self(ptr - n);
 		}
 
 		difference_type operator-(const iterator &x){
-			return difference_type(this->ptr - x.ptr);
+			return difference_type(ptr - x.ptr);
 		}
-
-		/*bool operator = (const iterator){
-			return ptr != NULL;
-		}*/
-		
 	};
 
 	
@@ -119,13 +115,16 @@ using namespace CJH;
 		iterator finish;
 		iterator end_of_storage;
 		void deallocate(){
-			if (start != end_of_storage){
+			if (start != end_of_storage){ // free space
 				Alloc::deallocate(CJH::addressof(*start), (end_of_storage - start)*sizeof(_Ty));
-				finish = start = end_of_storage = 0;
+				finish = start = end_of_storage = iterator(0);
 			}
 		}
 
-
+		/***
+		
+		值得新一步考量
+		*/
 		void insert_aux(iterator position, const _Ty& value){
 			if (finish != end_of_storage){
 				//在备用空间的起始位置， 用最后vector最后一个元素填充
@@ -137,9 +136,16 @@ using namespace CJH;
 			}
 			else{
 				const size_type oldsize = size();
-				const size_type newsize = (oldsize == 0) ? 1 : oldsize * 2;
+				const size_type newsize = (oldsize == 0) ? 1 : oldsize * 2; //还需要考虑当前空间为0的情况
 				size_type nbyte = newsize * sizeof(_Ty);
-				pointer_type newptr = Alloc::allocate(nbyte);
+				pointer_type newptr = NULL;
+				try{                      //这是检查bug补充的代码因为要保证安全性
+					newptr = Alloc::allocate(nbyte);
+				}
+				catch (...){
+					Alloc::deallocate(newptr, nbyte);
+					throw;
+				}
 				iterator newstart(newptr);
 				iterator newfinish = newstart;
 				try{
@@ -149,15 +155,15 @@ using namespace CJH;
 					newfinish = CJH::uninitialized_copy(position, finish, newfinish);
 				}
 				catch (...){
-					// 一旦出错就回滚
-					destroy(newstart, newfinish);
+					// error occur, rollback
+					destroy(newstart, newfinish); //虽然uninitialized_copy有当初始化出错的时候有回归其已经初始化空间的作用， 但是在这里有两次初始化
 					Alloc::deallocate(CJH::addressof(*newstart), nbyte);
 					throw;
 				}
 
 				destroy(begin(), end());
 				deallocate();
-
+				//udpate  water level
 				start = newstart;
 				finish = newfinish;
 				end_of_storage = start + newsize;
@@ -168,52 +174,62 @@ using namespace CJH;
 			
 		}
 
-		vector(const _Ty& value) :start(Alloc::allocate(sizeof(_Ty))), finish(start + 1), end_of_storage(finish) {
-			construct(CJH::addressof(*start), value);
+		explicit vector(size_type n) :start(Alloc::allocate(sizeof(_Ty))), finish(start + 1), end_of_storage(finish) {
+			try{
+				pointer_type ptr = Alloc::allocate(sizeof(_Ty)*n);
+			}
+			catch (...){
+				Alloc::deallocate(ptr, n * sizeof(_Ty));
+				throw;
+			}
+			start = iterator(ptr);
+			finish = start;
+			end_of_storage = start + n;
 		}
 
-		vector(size_type n, const _Ty& value) :start(Alloc::allocate(sizeof(_Ty)*n)){
+		vector(size_type n, const _Ty& value) :vector(n){
 
 			try{
 				finish = CJH::uninitialized_fill_n(start, n, value);
 			}
 			catch (...){
-				CJH::destroy(start, finish);
+				CJH::destroy(start, finish);  //可有可没有  因为该函数一旦抛出异常 其已经初始化的空间便已经还原
 				Alloc::deallocate(CJH::addressof(*start), sizeof(_Ty)*n);
 				throw;
 			}
+			//更新指针水位
 			finish = start + n;
 			end_of_storage = start + n;
 		}
 
 		
 
-		/*template<class Iter,
-			typename value = iterator_traits<Iter>::value_type>
-		vector(Iter first, Iter last){
-
-		}*/
+		//template<class Iter,
+		//	typename value = iterator_traits<Iter>::value_type>
+		//vector(Iter first, Iter last){
+		//	//
+		//}
 
 		vector(const self& v){
-			pointer_type ptr;
+			pointer_type newptr = NULL;//newptr
 			size_type newsize(CJH::addressof(*(v.end_of_storage)) - CJH::addressof(*(v.start)));
 			size_t nbyte = newsize * sizeof(_Ty);
 			try{
-				ptr = Alloc::allocate(nbyte);
+				newptr = Alloc::allocate(nbyte); 
 			}
 			catch (...){
-				Alloc::deallocate(ptr, nbyte);
+				Alloc::deallocate(newptr, nbyte);
 				throw;
 			}
 			
-			iterator newstart(ptr);
+			iterator newstart(newptr);
 			iterator newfinish;
 			try{
 				newfinish = CJH::uninitialized_copy(v.start, v.finish, newstart);
 			}
 			catch (...){
 				CJH::destroy(newstart, newfinish);
-				Alloc::deallocate(ptr, nbyte);
+				Alloc::deallocate(newptr, nbyte);
 				throw;
 			}
 			start = newstart;
@@ -224,28 +240,32 @@ using namespace CJH;
 		self& operator=(const self& v){
 			if (this == &v) return *this;
 
-
-			pointer_type ptr;
+			//1.first  allocate space, if fail, free this space and throw
+			pointer_type newptr = NULL;
 			size_type newsize(CJH::addressof(*(v.end_of_storage)) - CJH::addressof(*(v.start)));
 			size_t nbyte = newsize * sizeof(_Ty);
 			try{
-				ptr = Alloc::allocate(nbyte);
+				newptr = Alloc::allocate(nbyte);
 			}
 			catch (...){
-				Alloc::deallocate(ptr, nbyte);
+				Alloc::deallocate(newptr, nbyte);
 				throw;
 			}
 
-			iterator newstart(ptr);
+
+			//2. init the space
+			iterator newstart(newptr);
 			iterator newfinish;
 			try{
 				newfinish = CJH::uninitialized_copy(v.start, v.finish, newstart);
 			}
 			catch (...){
-				CJH::destroy(newstart, newfinish);
-				Alloc::deallocate(ptr, nbyte);
+			//	CJH::destroy(newstart, newfinish);
+				Alloc::deallocate(newptr, nbyte);
 				throw;
 			}
+
+			//free prev space, and update water level
 			clear();
 			deallocate();
 			start = newstart;
@@ -295,7 +315,12 @@ using namespace CJH;
 				++finish;
 			}
 			else{
-				insert_aux(end(), x);
+				try{
+					insert_aux(end(), x);
+				}
+				catch (...){
+					throw;
+				}
 			}
 		}
 		void pop_back(){
@@ -351,7 +376,14 @@ using namespace CJH;
 					const size_type newsize = oldsize + (oldsize > n ? (oldsize) : (n));
 
 					const size_t nbyte = newsize * sizeof(_Ty);
-					pointer_type newptr = Alloc::allocate(nbyte);
+					pointer_type newptr = NULL; 
+					try{
+						newptr = Alloc::allocate(nbyte);
+					}
+					catch (...){
+						Alloc::deallocate(newptr, nbyte);
+						throw;
+					}
 					iterator newstart(newptr);
 					iterator newfinish = newstart;
 
@@ -411,7 +443,14 @@ using namespace CJH;
 				//内存操作的知识点
 				const size_type oldsize = size();
 				size_type nbyte = newsize * sizeof(_Ty);
-				pointer_type newptr = Alloc::allocate(nbyte);
+				pointer_type newptr = NULL; 
+				try{
+					newptr = Alloc::allocate(nbyte);
+				}
+				catch (...){
+					Alloc::deallocate(newptr, nbyte);
+					throw;
+				}
 				iterator newstart(newptr);
 				iterator newfinish = newstart;
 				try{
@@ -439,6 +478,7 @@ using namespace CJH;
 		}
 
 		void swap(self& v){
+			if (this == &v) return;
 			iterator tmpstart = v.start;
 			iterator tmpfinish = v.finish;
 			iterator tmpend_of_storage = v.end_of_storage;
@@ -449,8 +489,6 @@ using namespace CJH;
 			finish = tmpfinish;
 			end_of_storage = tmpend_of_storage;
 		}
-		//vector() : start(0), finish(0), end_of_storage(0){}
-	
 	};
 
 

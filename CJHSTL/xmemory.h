@@ -18,7 +18,7 @@ __CJH_BEGIN
 	}
 
 	template<class Forward_iterator, class _Ty>
-	inline void construct(Forward_iterator position, const _Ty& value){
+	inline void construct(Forward_iterator position, const _Ty& value){  //以为new里面异常调用了复制构造函数  可能涉及到抛出异常
 		typedef typename iterator_traits<Forward_iterator>::pointer_type pointer_type;
 		pointer_type p;
 		p = &*position;

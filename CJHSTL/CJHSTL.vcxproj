@@ -93,6 +93,8 @@
     <ClInclude Include="memorypool.h" />
     <ClInclude Include="operator.h" />
     <ClInclude Include="queue.h" />
+    <ClInclude Include="rbtree.h" />
+    <ClInclude Include="set.h" />
     <ClInclude Include="stack.h" />
     <ClInclude Include="vector.h" />
     <ClInclude Include="xmemory.h" />
