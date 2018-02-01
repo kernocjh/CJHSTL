@@ -4,10 +4,12 @@
 #include <cstdlib> 
 #include <iterator>
 #include <set>
+#include <ctime>
 #include <map>
 #include "vector.h"
 #include "set.h"
 #include "rbtree.h"
+#include "map.h"
 using namespace std;
 class A{
 public:
@@ -15,11 +17,14 @@ public:
 	static int i;
 	A(){
 		++i;
-		cout << "默认构造函数\n";
+		cout << "默认构造函数  " << i << "\n";
 	}
 	A& operator=(const A& a){
-		cout << "Copy Assignment函数\n";
-		++i;
+		if (this != &a){
+			this->~A();
+			++i;
+			cout << "Copy Assignment函数  " << i << "\n";
+		}
 		return *this;
 	}
 
@@ -32,7 +37,7 @@ public:
 	}
 	A(const A& a){
 		++i;
-		cout << "复制构造函数\n";
+		cout << "复制构造函数  " << i << "\n";
 	}
 	bool operator <(const A& a){
 		return true;
@@ -51,32 +56,49 @@ public:
 };
 
 int A::i = 0;
+#define NUM 1000
 int main(){
+	
+//	CJH::multimap<int, int, CJH::greater<int>> mp;
+//	CJH::multimap<int, int > mp;
+//	A a;
+//	CJH::pair<int, int> pair;
+////	pair.second = a;
+//	srand(time(0));
+//	for (int i = 0; i < NUM; ++i){
+//		pair.first = rand() % NUM;
+//		pair.second = pair.first;
+//		mp.insert(pair);
+//	}
+//	CJH::copy(mp.begin(), mp.end(), ostream_iterator<int>(cout, " \n"));
+//	cout << endl;
+//	cout << mp.size() << endl;
+//	mp.t.travelor();
+//	//int n = mp.size();
+//	//for (int i = 0; i < n; ++i){
+//	//	mp.erase(mp.begin());
+//	//}
+//	mp.t.clear();
+//	mp.t.clear();
+//	mp.t.clear();
 
-	int i;
-	A ia[6];
-	cout << "sdafghjgfds"<<ia[0].i << endl;
-	CJH::set<A> iset(ia, ia + 5);
-	cout << "size=" << iset.size() << endl;
-	cout << "3count = " << iset.count(ia[3]) << endl;
-	iset.insert(ia[3]);
-	cout << "size=" << iset.size() << endl;
-	cout << "3count = " << iset.count(ia[3]) << endl;
-	iset.insert(ia[5]);
-	cout << "size=" << iset.size() << endl;
-	cout << "3count = " << iset.count(ia[3]) << endl;
-	iset.erase(ia[1]);
-	cout << "3count = " << iset.count(ia[3]) << endl;
-	cout << "1count = " << iset.count(ia[1]) << endl;
-	CJH::set<A>::iterator ite1 = iset.begin();
-	CJH::set<A>::iterator ite2 = iset.end();
-	for (; ite1 != ite2; ++ite1)
-		cout << (*ite1).i << " ";
+
+	A a;
+	CJH::multiset<int> mp;
+	srand((unsigned int)time(0));
+	for (int i = 0; i < NUM; ++i){
+		mp.insert(rand()%NUM);
+	}
+	CJH::copy(mp.begin(), mp.end(), ostream_iterator<int>(cout, " \n"));
 	cout << endl;
-	ite1 = iset.find(ia[1]);
-	if (ite1 == iset.end())
-		cout << "1 don't found\n";
-	iset.~set();
-//	*ite1 = 9;
+	cout << mp.size() << endl;
+	
+	//int n = mp.size();
+	//for (int i = 0; i < n; ++i){
+	//	mp.erase(mp.begin());
+	//}
+	mp.clear();
+	mp.clear();
+	mp.clear();
 	return 0;
 }

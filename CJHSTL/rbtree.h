@@ -81,7 +81,7 @@ __CJH_BEGIN
 	};
 	
 	template<class Key, class _Ty, class RBtreeNode = RBtreeNode<Key, _Ty>,
-		class Category = CJH::bidirectinal_iterator_tag>
+			class Category = CJH::bidirectinal_iterator_tag>
 	class rbtree_iterator:public iterator_base<Category, _Ty> {
 	public:
 		typedef iterator_base<Category, _Ty> _Mybase;
@@ -227,8 +227,155 @@ __CJH_BEGIN
 	private:
 		RBtree node;
 	};
-	
-	
+
+	template<class Key, class _Ty, class RBtreeNode = RBtreeNode<Key, _Ty>,
+				class Category = CJH::bidirectinal_iterator_tag>
+	class rbtree_reverse_iterator{
+	public:
+		typedef iterator_base<Category, _Ty> _Mybase;
+		typedef typename _Mybase::difference_type difference_type;
+		typedef typename _Mybase::iterator_category iterator_category;
+
+		typedef typename RBtreeNode::size_type size_type;
+		typedef typename RBtreeNode::key_type key_type;
+		typedef typename RBtreeNode::value_type value_type;
+		typedef typename RBtreeNode::pointer_type pointer_type;
+		typedef typename RBtreeNode::reference_type reference_type;
+		typedef typename RBtreeNode::RBtreeNodePtr RBtreeNodePtr;
+		typedef RBtree<Key, _Ty> RBtree;
+		typedef RBtree* RBtreePtr;
+		typedef rbtree_reverse_iterator<Key, _Ty, RBtreeNode, Category> self;
+	public:
+		rbtree_reverse_iterator() :iterator_base(), ptr(){
+
+		}
+		explicit rbtree_reverse_iterator(const RBtree& rb) :node(rb){
+
+		}
+		rbtree_reverse_iterator(const self& x) : node(x.node){
+
+		}
+
+		rbtree_reverse_iterator(const RBtreeNodePtr root, const RBtreeNodePtr NIL) :node(root, NIL){
+
+		}
+
+		self& operator=(const self& x){
+			if (this != &x){
+				node.NIL = x.node.NIL;
+				node.root = x.node.root;
+			}
+			return *this;
+		}
+
+		reference_type operator *(){
+			return (node.root->value);
+		}
+
+		pointer_type operator ->(){
+			return (&(operator*()));
+		}
+
+
+		bool operator ==(const self& x){
+			return (node.NIL == x.node.NIL && node.root == x.node.root);
+		}
+
+		bool operator !=(const self& x){
+			return !(*this == x);
+		}
+
+		self& operator --(){
+			//当当前节点的root和NIL都指向NIL的时候的情况是否抛出异常有待检验
+			RBtreeNodePtr tmp = NULL;
+			if (node.root->right != node.NIL){// judge it is right child
+
+				tmp = node.root->right;
+				while (tmp->left != node.NIL)
+					tmp = tmp->left;
+				node.root = tmp;
+			}
+			else{ //it is not tight child
+				tmp = node.root;
+				while (tmp->parent != node.NIL && tmp->parent->right == tmp)  // tmp->parent != node.NIL  this condition must be think out
+					tmp = tmp->parent;
+				node.root = tmp->parent;
+			}
+			return *this;
+		}
+
+		self operator ++(int){
+			self tmp(*this);
+			++*this;
+			return tmp;
+		}
+
+		self& operator ++(){
+			if (node.NIL == node.root){
+				node.root = node.NIL->right;
+			}
+			else{
+				RBtreeNodePtr tmp = NULL;
+				if (node.root->left != node.NIL){
+					tmp = node.root->left;
+					while (tmp->right != node.NIL)
+						tmp = tmp->right;
+					node.root = tmp;
+				}
+				else{
+					tmp = node.root;
+					while (tmp->parent != node.NIL && tmp->parent->left == tmp)
+						tmp = tmp->parent;
+					node.root = tmp->parent;
+				}
+			}
+			return *this;
+		}
+
+		self operator--(int){
+			self tmp(*this);
+			--*this;
+			return tmp;
+		}
+
+
+		~rbtree_reverse_iterator(){
+		}
+
+		void _SetNode(const RBtree& rb){
+			node.NIL = rb.NIL;
+			node.root = rb.root;
+		}
+
+		void _SetNode_Cur(RBtreeNodePtr ptr){
+			node.root = ptr;
+		}
+		void _SetNode_NIL(RBtreeNodePtr ptr){
+			node.NIL = ptr;
+		}
+
+		RBtreePtr _GetNode() const{
+			return &node;
+		}
+
+		RBtreeNodePtr _GetNode_Cur() const{
+			return node.root;
+		}
+
+		RBtreeNodePtr _GetNode_NIL() const{
+			return node.NIL;
+		}
+
+		void swap(self& x){
+			if (this != &x){
+				CJH::swap(node.NIL, x.node.NIL);
+				CJH::swap(node.root, x.node.root);
+			}
+		}
+	private:
+		RBtree node;
+
+	};
 
 	template<class Key, class _Ty, class Compare = CJH::less<Key>,
 			class Alloc = rbtreenode_allocator<Key, _Ty> >
@@ -249,6 +396,7 @@ __CJH_BEGIN
 
 
 		typedef rbtree_iterator<Key, _Ty, RBtreeNode, bidirectinal_iterator_tag> iterator;
+		typedef rbtree_reverse_iterator<Key, _Ty, RBtreeNode, bidirectinal_iterator_tag> reverse_iterator;
 	protected:
 		void initRBtree(RBtree& rbtree){
 			try{
@@ -299,10 +447,10 @@ __CJH_BEGIN
 				free_node(ptr);
 				throw;
 			}
+			ptr->color = red;
 			ptr->left = rbtree.NIL;
 			ptr->right = rbtree.NIL;
 			ptr->parent = rbtree.NIL;
-
 			return ptr;
 		}
 
@@ -322,32 +470,32 @@ __CJH_BEGIN
 			free_node(x);
 		}
 
-		RBtreeNodePtr& left(const RBtreeNodePtr x){
-			return (RBtreeNodePtr&)x->left;
+		RBtreeNodePtr left(const RBtreeNodePtr x){
+			return x->left;
 		}
 
-		RBtreeNodePtr& leftmost(){
-			return (RBtreeNodePtr&)rbtree.NIL->left;
+		RBtreeNodePtr leftmost(){
+			return rbtree.NIL->left;
 		}
 
-		RBtreeNodePtr& right(const RBtreeNodePtr x){
-			return (RBtreeNodePtr&)x->right;
+		RBtreeNodePtr right(const RBtreeNodePtr x){
+			return x->right;
 		}
 
-		RBtreeNodePtr& rightmost(){
-			return (RBtreeNodePtr&)rbtree.NIL->right;
+		RBtreeNodePtr rightmost(){
+			return rbtree.NIL->right;
 		}
 
-		RBtreeNodePtr& parent(const RBtreeNodePtr x){
-			return (RBtreeNodePtr&)x->parent;
+		RBtreeNodePtr parent(const RBtreeNodePtr x){
+			return x->parent;
 		}
 
-		RBtreeNodePtr& NIL(){
-			return (RBtreeNodePtr&)rbtree.NIL;
+		RBtreeNodePtr NIL(){
+			return rbtree.NIL;
 		}
 
-		key_type& Key(const RBtreeNodePtr x){
-			return (key_type&)x->key;
+		key_type Key(const RBtreeNodePtr x){
+			return x->key;
 		}
 
 		reference_type value(const RBtreeNodePtr x){
@@ -358,8 +506,8 @@ __CJH_BEGIN
 			return (color_type&)x->color;
 		}
 
-		RBtreeNodePtr& root(){
-			return (RBtreeNodePtr&)rbtree.root;
+		RBtreeNodePtr root(){
+			return rbtree.root;
 		}
 		
 
@@ -440,13 +588,21 @@ __CJH_BEGIN
 		}
 
 		iterator begin(){
-			return iterator(leftmost(), rbtree.NIL);
+			return iterator(leftmost(), NIL());
 		}
+
+		reverse_iterator rbegin(){
+			return reverse_iterator(rightmost(), NIL());
+		}
+
 
 		iterator end(){
-			return iterator(rbtree.NIL, rbtree.NIL);
+			return iterator(NIL(), NIL());
 		}
 
+		reverse_iterator rend(){
+			return reverse_iterator(NIL(), NIL());
+		}
 		bool empty(){
 			return Mycount == 0;
 		}
@@ -548,13 +704,13 @@ __CJH_BEGIN
 		}
 	public:
 
-		iterator insert_unique(CJH::pair<key_type, value_type>& pair){
+		iterator insert_unique(const CJH::pair<key_type, value_type>& pair){
 			RBtreeNodePtr ptr = create_node(pair.first, pair.second);
 			if (!rbtreeInsert_unique(&rbtree, ptr)){
 				destroy_node(ptr);
 				return end();
 			}
-
+			return iterator(ptr, NIL());
 		}
 		template<class InputIter>
 		iterator insert_unique(InputIter first, InputIter last){
@@ -571,10 +727,27 @@ __CJH_BEGIN
 			return iterator(ptr, NIL());
 		}
 
-		void insert_equal(CJH::pair<key_type, value_type>& pair){
+		template<class InputIter>
+		iterator insert_equal(InputIter first, InputIter last){  //此代码仅仅只针对multiset
+			typedef typename CJH::iterator_traits<InputIter>::value_type value_type;
+			RBtreeNodePtr ptr = NIL();
+			while (first != last){
+				RBtreeNodePtr ptr = create_node(*first, *first);
+				if (!rbtreeInsert_equal(&rbtree, ptr)){
+					destroy_node(ptr);
+					return end();
+				}
+				++first;
+			}
+			return iterator(ptr, NIL());
+		}
+
+		iterator insert_equal(const CJH::pair<key_type, value_type>& pair){
 
 			RBtreeNodePtr ptr = create_node(pair.first, pair.second);
+
 			rbtreeInsert_equal(&rbtree, ptr);
+			return iterator(ptr, NIL());
 		}
 
 		iterator erase(const key_type& key){
@@ -605,15 +778,23 @@ __CJH_BEGIN
 		}
 
 		iterator erase(iterator first, iterator last){
-			for (first; first != last; ++first)
-				erase(first);
+			for (first; first != last;)
+				erase(first++);
 			return last;
 		}
 
 		void travelor(){
 			_travelor(rbtree.root, 0);
 		}
-
+		void inOrder(){
+			inOrder(root());
+		}
+		void inOrder(RBtreeNodePtr root){
+			if (root == NIL()) return;
+			inOrder(root->left);
+			cout << root->key << "\n";
+			inOrder(root->right);
+		}
 	private:
 		RBtree rbtree;
 		size_type Mycount;
@@ -749,12 +930,12 @@ __CJH_BEGIN
 				/*node->color = black;
 				return;*/
 			}
-			else if (key_compare(node->key, x->key)){
+			else if (key_compare(node->key, y->key)){
 				y->left = node;
 				if (y == T->NIL->left)
 					T->NIL->left = node;
 			}
-			else if (CJH::equal<key_type>()(node->key, x->key)){
+			else if (CJH::equal<key_type>()(node->key, y->key)){
 				return false;
 			}
 			else{
@@ -773,13 +954,12 @@ __CJH_BEGIN
 
 		bool rbtreeInsert_equal(RBtree *T, RBtreeNodePtr node)
 		{
-
 			RBtreeNodePtr x, y;
 			y = T->NIL;
 			x = T->root;
 			while (x != T->NIL){
 				y = x;
-				if (key_compare(node->key, x->key)){
+				if (key_compare(node->key, x->key)){  //node->key < x->key  key_compare(node->key, x->key)
 					x = x->left;
 				}
 				else {
@@ -790,13 +970,12 @@ __CJH_BEGIN
 			node->parent = y;
 			if (y == T->NIL){  //  This is root Node. 
 				T->root = node;
-				
 				T->NIL->left = node;
 				T->NIL->right = node;
 				/*node->color = black;
 				return;*/
 			}
-			else if(key_compare(node->key, x->key)){
+			else if (key_compare(node->key, y->key)){  //当时在写代码的时候因为这个地方吧key_compare(node->key, y->key) 学成了key_compare(node->key, x->key)重而导致浪费了一整天的时间来检查错误
 				y->left = node;
 				if (y == T->NIL->left)
 					T->NIL->left = node;
@@ -806,11 +985,10 @@ __CJH_BEGIN
 				if (y == T->NIL->right)
 					T->NIL->right = node;
 			}
-
+			++Mycount;
 			node->left = T->NIL;
 			node->right = T->NIL;
 			node->color = red;
-			++Mycount;
 			return rbtreeInsertFixup(T, node);
 		}
 
@@ -871,9 +1049,6 @@ __CJH_BEGIN
 			T->root->color = black;
 			return true;
 		}
-
-
-
 		void rbtreeTransplant(RBtree *T, RBtreeNodePtr u, RBtreeNodePtr v)
 		{
 			/**
@@ -940,6 +1115,7 @@ __CJH_BEGIN
 			if (yOriginalColor == black){
 				rbtreeDeleteFixup(T, x);
 			}
+
 			if (first._GetNode_Cur() == node){
 				rbtree.NIL->left = rbtree.root;
 				while (rbtree.NIL->left->left != rbtree.NIL)
@@ -1016,8 +1192,6 @@ __CJH_BEGIN
 			}
 			node->color = black;
 		}
-
-
 	};
 
 __CJH_END
