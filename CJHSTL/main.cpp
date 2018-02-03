@@ -69,33 +69,47 @@ public:
 int A::i = 0;
 #define NUM 500000
 int main(){
-	srand(time(0));
-	clock_t start, end;
-	CJH::multiset<int> mp;
+	
+//	CJH::multimap<int, int, CJH::greater<int>> mp;
+//	CJH::multimap<int, int > mp;
+//	A a;
+//	CJH::pair<int, int> pair;
+////	pair.second = a;
+//	srand(time(0));
+//	for (int i = 0; i < NUM; ++i){
+//		pair.first = rand() % NUM;
+//		pair.second = pair.first;
+//		mp.insert(pair);
+//	}
+//	CJH::copy(mp.begin(), mp.end(), ostream_iterator<int>(cout, " \n"));
+//	cout << endl;
+//	cout << mp.size() << endl;
+//	mp.t.travelor();
+//	//int n = mp.size();
+//	//for (int i = 0; i < n; ++i){
+//	//	mp.erase(mp.begin());
+//	//}
+//	mp.t.clear();
+//	mp.t.clear();
+//	mp.t.clear();
+
+
 	A a;
+	CJH::multiset<int> mp;
 	srand((unsigned int)time(0));
-	CJH::vector<int> v;
 	for (int i = 0; i < NUM; ++i){
-		v.push_back(rand()%NUM);
+		mp.insert(rand()%NUM);
 	}
-	start = clock();
-	mp.insert(v.begin(), v.end());
-	//	CJH::copy(mp.begin(), mp.end(), ostream_iterator<int>(cout, " \n"));
+	CJH::copy(mp.begin(), mp.end(), ostream_iterator<int>(cout, " \n"));
 	cout << endl;
-	end = clock();
 	cout << mp.size() << endl;
-	cout << "time = " << end - start << endl;
-	cout << a.i << endl;
-	//	mp.t.travelor();
-//	mp.t.inOrder();
+	
 	//int n = mp.size();
 	//for (int i = 0; i < n; ++i){
 	//	mp.erase(mp.begin());
 	//}
 	mp.clear();
-	v.clear();
-
-
-	
+	mp.clear();
+	mp.clear();
 	return 0;
 }
