@@ -4,13 +4,24 @@
 #include <cstdlib> 
 #include <iterator>
 #include <set>
+
 #include <ctime>
+#include <hash_set>
+#include <hash_map>
 #include <map>
 #include "vector.h"
 #include "set.h"
 #include "rbtree.h"
 #include "map.h"
+#include "list.h"
+#include "deque.h"
+
+#include "hashtable.h"
+#include "hash_set.h"
+#include "hash_map.h"
 using namespace std;
+
+//针对set multiset  hash_set hash_multiset的压力测试测试
 class A{
 public:
 
@@ -23,7 +34,7 @@ public:
 		if (this != &a){
 			this->~A();
 			++i;
-			cout << "Copy Assignment函数  " << i << "\n";
+			//	cout << "Copy Assignment函数  " << i << "\n";
 		}
 		return *this;
 	}
@@ -37,7 +48,7 @@ public:
 	}
 	A(const A& a){
 		++i;
-		cout << "复制构造函数  " << i << "\n";
+		//cout << "复制构造函数  " << i << "\n";
 	}
 	bool operator <(const A& a){
 		return true;
@@ -51,54 +62,64 @@ public:
 	}
 	~A(){
 		--i;
-		cout << "析构函数" << i << "\n";
+		//	cout << "析构函数" << i << "\n";
 	}
 };
 
 int A::i = 0;
-#define NUM 1000
+#define NUM 500000
 int main(){
-	
-//	CJH::multimap<int, int, CJH::greater<int>> mp;
-//	CJH::multimap<int, int > mp;
-//	A a;
-//	CJH::pair<int, int> pair;
-////	pair.second = a;
-//	srand(time(0));
-//	for (int i = 0; i < NUM; ++i){
-//		pair.first = rand() % NUM;
-//		pair.second = pair.first;
-//		mp.insert(pair);
-//	}
-//	CJH::copy(mp.begin(), mp.end(), ostream_iterator<int>(cout, " \n"));
-//	cout << endl;
-//	cout << mp.size() << endl;
-//	mp.t.travelor();
-//	//int n = mp.size();
-//	//for (int i = 0; i < n; ++i){
-//	//	mp.erase(mp.begin());
-//	//}
-//	mp.t.clear();
-//	mp.t.clear();
-//	mp.t.clear();
-
-
-	A a;
+	srand(time(0));
+	clock_t start, end;
 	CJH::multiset<int> mp;
+	A a;
 	srand((unsigned int)time(0));
+	CJH::vector<int> v;
 	for (int i = 0; i < NUM; ++i){
-		mp.insert(rand()%NUM);
+		v.push_back(rand()%NUM);
 	}
-	CJH::copy(mp.begin(), mp.end(), ostream_iterator<int>(cout, " \n"));
+	start = clock();
+	mp.insert(v.begin(), v.end());
+	//	CJH::copy(mp.begin(), mp.end(), ostream_iterator<int>(cout, " \n"));
 	cout << endl;
+	end = clock();
 	cout << mp.size() << endl;
-	
+	cout << "time = " << end - start << endl;
+	cout << a.i << endl;
+	//	mp.t.travelor();
+//	mp.t.inOrder();
 	//int n = mp.size();
 	//for (int i = 0; i < n; ++i){
 	//	mp.erase(mp.begin());
 	//}
 	mp.clear();
-	mp.clear();
-	mp.clear();
+	v.clear();
+
+
+	//	clock_t start, end;
+	//	CJH::multimap<int, A> mp;
+	//	A a;
+	//	CJH::pair<int, A> pair;
+	//	pair.second = a;
+	//
+	//	start = clock();
+	//	srand((unsigned int)time(0));
+	//	for (int i = 0; i < NUM; ++i){
+	//		pair.first = rand() % NUM;
+	//		//pair.second = a;
+	//		mp.insert(mp.begin(), pair);
+	//	}
+	//	//	CJH::copy(mp.begin(), mp.end(), ostream_iterator<int>(cout, " \n"));
+	//	cout << endl;
+	//	cout << mp.size() << endl;
+	//	end = clock();
+	////	mp.t.travelor();
+	//	//int n = mp.size();
+	//	//for (int i = 0; i < n; ++i){
+	//	//	mp.erase(mp.begin());
+	//	//}
+	//	mp.clear();
+	//	cout << "time = " << end - start << endl;
+	//	cout << a.i << endl;
 	return 0;
 }

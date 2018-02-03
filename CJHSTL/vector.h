@@ -93,6 +93,12 @@ using namespace CJH;
 		difference_type operator-(const iterator &x){
 			return difference_type(ptr - x.ptr);
 		}
+
+		void swap(self& x){
+			if (this != &x){
+				CJH::swap(ptr, x.ptr);
+			}
+		}
 	};
 
 	
@@ -175,8 +181,9 @@ using namespace CJH;
 		}
 
 		explicit vector(size_type n) :start(Alloc::allocate(sizeof(_Ty))), finish(start + 1), end_of_storage(finish) {
+			pointer_type ptr = NULL;
 			try{
-				pointer_type ptr = Alloc::allocate(sizeof(_Ty)*n);
+				ptr = Alloc::allocate(sizeof(_Ty)*n);
 			}
 			catch (...){
 				Alloc::deallocate(ptr, n * sizeof(_Ty));
@@ -280,11 +287,11 @@ using namespace CJH;
 		}
 
 
-		iterator begin() {   // 完成
+		iterator begin() const{   // 完成
 			return start;
 		}
 
-		iterator end(){  // 完成
+		iterator end() const{  // 完成
 			return finish;
 		}
 
@@ -299,8 +306,9 @@ using namespace CJH;
 		}
 
 		
-		reference_type operator[](int n){ // 完成
-			return *(begin() + n);
+		reference_type operator[](int n) const{ // 完成
+			iterator it = begin();
+			return *(it + n);
 		}
 		reference_type front(){ //完成
 			return *start;
@@ -479,15 +487,9 @@ using namespace CJH;
 
 		void swap(self& v){
 			if (this == &v) return;
-			iterator tmpstart = v.start;
-			iterator tmpfinish = v.finish;
-			iterator tmpend_of_storage = v.end_of_storage;
-			v.start = start;
-			v.finish = finish;
-			v.end_of_storage = end_of_storage;
-			start = tmpstart;
-			finish = tmpfinish;
-			end_of_storage = tmpend_of_storage;
+			start.swap(v.start);
+			finish.swap(v.finish);
+			end_of_storage.swap(v.end_of_storage);
 		}
 	};
 

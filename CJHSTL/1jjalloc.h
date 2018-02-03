@@ -33,7 +33,9 @@ __CJH_BEGIN
 			while (1)
 			{
 				my_handler = __default_alloc_oom_handler;
-				if (0 == my_handler){ __THROW_BAD_ALLOC; }
+				if (0 == my_handler){ 
+					__THROW_BAD_ALLOC; 
+				}
 				(*my_handler)();
 				ptr = malloc(n);
 				if (ptr) return ptr;
@@ -60,8 +62,10 @@ __CJH_BEGIN
 			cout << "__default_alloc ¹¹Ôì";
 		}*/
 		static void *allocate(size_t n){
-			void *ptr;
+			void *ptr = NULL;
+			
 			ptr = malloc(n);
+		//	ptr = malloc(n);
 			if (NULL == ptr){
 				try{
 					ptr = oom_malloc(n);

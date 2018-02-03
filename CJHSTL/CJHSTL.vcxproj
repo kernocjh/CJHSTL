@@ -88,6 +88,9 @@
     <ClInclude Include="auto_ptr.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="deque.h" />
+    <ClInclude Include="hash_map.h" />
+    <ClInclude Include="hash_set.h" />
+    <ClInclude Include="hashtable.h" />
     <ClInclude Include="iterator.h" />
     <ClInclude Include="list.h" />
     <ClInclude Include="map.h" />
