@@ -27,14 +27,23 @@ __CJH_BEGIN
 		typedef map<Key, _Ty, Compare> self;
 
 	public:
-		map() :t(){
+		map() :t(Compare()){
 			
+		}
+
+		template<class InputIter>
+		map(InputIter first, InputIter last) : t(Compare()){
+			t.insert_unique_tree(first, last);
+		}
+
+		template<class InputIter>
+		map(InputIter first, InputIter last, Compare cmp) : t(cmp){
+			t.insert_unique_tree(first, last);
 		}
 
 		map(const self& x):t(x.t){
 
 		}
-
 		self& operator=(const self& x){
 			if (this != &x){
 				self tmp(x);
@@ -101,10 +110,10 @@ __CJH_BEGIN
 			return t.insert_unique(p);
 		}
 
-		//template<class Iter>
-		//void insert(Iter first, Iter last){
-
-		//}
+		template<class InputIter>
+		void insert(InputIter first, InputIter last){
+			t.insert_unique_tree(first, last);
+		}
 
 		void erase(iterator position){
 			t.erase(position);
@@ -174,9 +183,20 @@ __CJH_BEGIN
 		typedef multimap<Key, _Ty, Compare> self;
 
 	public:
-		multimap() :t(){
+		multimap() :t(Compare()){
 
 		}
+
+		template<class InputIter>
+		multimap(InputIter first, InputIter last) : t(Compare()){
+			t.insert_equal_tree(first, last);
+		}
+
+		template<class InputIter>
+		multimap(InputIter first, InputIter last, Compare cmp) : t(cmp){
+			t.insert_equal_tree(first, last);
+		}
+
 
 		multimap(const self& x) :t(x.t){
 
@@ -248,10 +268,11 @@ __CJH_BEGIN
 			return t.insert_equal(p);
 		}
 
-		//template<class Iter>
-		//void insert(Iter first, Iter last){
+		template<class InputIter>
+		void insert(InputIter first, InputIter last){
+			t.insert_equal_tree(first, last);
+		}
 
-		//}
 
 		void erase(iterator position){
 			t.erase(position);
@@ -303,6 +324,11 @@ __CJH_BEGIN
 __CJH_END
 
 #endif  //__MAP_H__
+
+
+
+
+
 //针对multimap的测试
 //class A{
 //public:
@@ -499,5 +525,219 @@ __CJH_END
 //	mp.t.clear();
 //	mp.t.clear();
 //	mp.t.clear();
+//	return 0;
+//}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//压力测试
+//针对map的测试   为什么大小测出来一直是32768
+//class A{
+//public:
+//
+//	static int i;
+//	A(){
+//		++i;
+//		cout << "默认构造函数  " << i << "\n";
+//	}
+//	A& operator=(const A& a){
+//		if (this != &a){
+//			this->~A();
+//			++i;
+//			//	cout << "Copy Assignment函数  " << i << "\n";
+//		}
+//		return *this;
+//	}
+//
+//	bool operator==(const A& a) const{
+//		return this == &a;
+//	}
+//
+//	bool operator !=(const A& a) const{
+//		return !(*this == a);
+//	}
+//	A(const A& a){
+//		++i;
+//		//cout << "复制构造函数  " << i << "\n";
+//	}
+//	bool operator <(const A& a){
+//		return true;
+//	}
+//
+//	bool operator <(const A& a) const{
+//		return true;
+//	}
+//	bool operator >(const A& a){
+//		return true;
+//	}
+//	~A(){
+//		--i;
+//		//	cout << "析构函数" << i << "\n";
+//	}
+//};
+//
+//int A::i = 0;
+//#define NUM 1000000
+//int main(){
+//
+//	//	CJH::map<int, int> mp;
+//	//	A a;
+//	//	CJH::pair<int, int> pair;
+//	////	pair.second = a;
+//	//	srand(time(0));
+//	//	for (int i = 0; i < NUM; ++i){
+//	//		/*pair.first = rand() % NUM;
+//	//		pair.second = pair.first;
+//	//		mp.insert(pair);*/
+//	//		int num = rand() % NUM;
+//	//		mp[num] = num;
+//	//	}
+//	//	CJH::copy(mp.begin(), mp.end(), ostream_iterator<int>(cout, " \n"));
+//	//	cout << endl;
+//	//	cout << mp.size() << endl;
+//	//	mp.t.travelor();
+//	//	//int n = mp.size();
+//	//	//for (int i = 0; i < n; ++i){
+//	//	//	mp.erase(mp.begin());
+//	//	//}
+//	//	mp.t.clear();
+//	//	mp.t.clear();
+//	//	mp.t.clear();
+//
+//
+//	clock_t start, end;
+//	CJH::map<int, A> mp;
+//	A a;
+//	CJH::pair<int, A> pair;
+//	pair.second = a;
+//
+//	start = clock();
+//	srand((unsigned int)time(0));
+//	for (int i = 0; i < NUM; ++i){
+//		pair.first = rand() % NUM;
+//		//pair.second = a;
+//		mp.insert(mp.begin(), pair);
+//	}
+//	//	CJH::copy(mp.begin(), mp.end(), ostream_iterator<int>(cout, " \n"));
+//	cout << endl;
+//	cout << mp.size() << endl;
+//	end = clock();
+//	//	mp.t.travelor();
+//	//int n = mp.size();
+//	//for (int i = 0; i < n; ++i){
+//	//	mp.erase(mp.begin());
+//	//}
+//	mp.clear();
+//	cout << "time = " << end - start << endl;
+//	cout << a.i << endl;
+//	return 0;
+//}
+
+
+
+
+//针对map multimap  hash_map hash_multimap的压力测试测试
+//class A{
+//public:
+//
+//	static int i;
+//	A(){
+//		++i;
+//		cout << "默认构造函数  " << i << "\n";
+//	}
+//	A& operator=(const A& a){
+//		if (this != &a){
+//			this->~A();
+//			++i;
+//			//	cout << "Copy Assignment函数  " << i << "\n";
+//		}
+//		return *this;
+//	}
+//
+//	bool operator==(const A& a) const{
+//		return this == &a;
+//	}
+//
+//	bool operator !=(const A& a) const{
+//		return !(*this == a);
+//	}
+//	A(const A& a){
+//		++i;
+//		//cout << "复制构造函数  " << i << "\n";
+//	}
+//	bool operator <(const A& a){
+//		return true;
+//	}
+//
+//	bool operator <(const A& a) const{
+//		return true;
+//	}
+//	bool operator >(const A& a){
+//		return true;
+//	}
+//	~A(){
+//		--i;
+//		//	cout << "析构函数" << i << "\n";
+//	}
+//};
+//
+//int A::i = 0;
+//#define NUM 50000000
+//int main(){
+//	srand(time(0));
+//	clock_t start, end;
+//	CJH::map<int, A> mp;
+//	A a;
+//	srand((unsigned int)time(0));
+//	CJH::pair<int, A> pair;
+//	CJH::vector<CJH::pair<int, A>> v;
+//	for (int i = 0; i < NUM; ++i){
+//		pair.first = rand() % NUM;
+//		pair.second = a;
+//		v.push_back(pair);
+//	}
+//	start = clock();
+//	mp.insert(v.begin(), v.end());
+//	//	CJH::copy(mp.begin(), mp.end(), ostream_iterator<int>(cout, " \n"));
+//	cout << endl;
+//	end = clock();
+//	cout << mp.size() << endl;
+//	cout << "time = " << end - start << endl;
+//	cout << a.i << endl;
+//	//	mp.t.travelor();
+//	//	mp.t.inOrder();
+//	//int n = mp.size();
+//	//for (int i = 0; i < n; ++i){
+//	//	mp.erase(mp.begin());
+//	//}
+//	mp.clear();
+//	v.clear();
 //	return 0;
 //}

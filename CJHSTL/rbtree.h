@@ -543,6 +543,15 @@ __CJH_BEGIN
 			}
 		}
 
+		rbtree_base(const Compare& cmp) :key_compare(cmp), rbtree(), Mycount(0){
+			try{
+				initRBtree(rbtree);
+			}
+			catch (...){
+				destroyRBtree(rbtree);
+				throw;
+			}
+		}
 		rbtree_base(const self& x) :rbtree(x.rbtree), Mycount(0), key_compare(x.key_compare){   //此构造函数存在异常安全
 			try{
 				rbtree.NIL = NULL;
@@ -636,7 +645,8 @@ __CJH_BEGIN
 			return key_compare;
 		}
 
-		iterator lower_bound(const key_type& key){
+		//这两个函数算法理解有问题
+	/*	iterator lower_bound(const key_type& key){
 			RBtreeNodePtr tmp = rbtree.root;
 			RBtreeNodePtr ptr = NIL();
 			while (tmp != NIL()){
@@ -672,7 +682,7 @@ __CJH_BEGIN
 			}
 
 			return iterator(ptr, NIL());
-		}
+		}*/
 
 		size_type count(const key_type& key){
 			iterator first = lower_bound(key);
@@ -717,7 +727,22 @@ __CJH_BEGIN
 			typedef typename CJH::iterator_traits<InputIter>::value_type value_type;
 			RBtreeNodePtr ptr = NIL();
 			while (first != last){
-				RBtreeNodePtr ptr = create_node(*first, *first);
+				RBtreeNodePtr ptr = create_node((*first), *first);
+				if (!rbtreeInsert_unique(&rbtree, ptr)){
+					destroy_node(ptr);
+					return end();
+				}
+				++first;
+			}
+			return iterator(ptr, NIL());
+		}
+
+		template<class InputIter>
+		iterator insert_unique_tree(InputIter first, InputIter last){
+			typedef typename CJH::iterator_traits<InputIter>::value_type value_type;
+			RBtreeNodePtr ptr = NIL();
+			while (first != last){
+				RBtreeNodePtr ptr = create_node((*first).first, (*first).second);
 				if (!rbtreeInsert_unique(&rbtree, ptr)){
 					destroy_node(ptr);
 					return end();
@@ -733,6 +758,21 @@ __CJH_BEGIN
 			RBtreeNodePtr ptr = NIL();
 			while (first != last){
 				RBtreeNodePtr ptr = create_node(*first, *first);
+				if (!rbtreeInsert_equal(&rbtree, ptr)){
+					destroy_node(ptr);
+					return end();
+				}
+				++first;
+			}
+			return iterator(ptr, NIL());
+		}
+
+		template<class InputIter>
+		iterator insert_equal_tree(InputIter first, InputIter last){
+			typedef typename CJH::iterator_traits<InputIter>::value_type value_type;
+			RBtreeNodePtr ptr = NIL();
+			while (first != last){
+				RBtreeNodePtr ptr = create_node((*first).first, (*first).second);
 				if (!rbtreeInsert_equal(&rbtree, ptr)){
 					destroy_node(ptr);
 					return end();

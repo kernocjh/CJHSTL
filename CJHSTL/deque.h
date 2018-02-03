@@ -789,7 +789,7 @@ using namespace CJH;
 				map[i] = NULL;
 			}
 		}
-	private:
+	public:
 		map_pointer map;
 		size_type map_size;
 		iterator start;
