@@ -25,10 +25,8 @@ using namespace CJH;
 		typedef _vector_iterator<_Ty, Alloc, Category> self;
 		pointer_type ptr;
 	public:
-
-
-//		iterator operator =(const )
 		_vector_iterator(const pointer_type t = 0) : iterator_base<Category, _Ty>(), ptr(t){
+
 		}
 
 		_vector_iterator(const self& x) :ptr(x.ptr) {
@@ -40,7 +38,8 @@ using namespace CJH;
 		}
 
 		iterator& operator=(const iterator& x){
-			ptr = x.ptr;
+			if (this != &x)  //
+				ptr = x.ptr;
 			return *this;
 		}
 
@@ -103,7 +102,7 @@ using namespace CJH;
 
 	
 
-	template<class _Ty, class Alloc = allocator<_Ty> >
+	template<class _Ty, class Alloc = CJH::allocator<_Ty> >
 	class vector{
 
 	private:
@@ -120,27 +119,45 @@ using namespace CJH;
 		iterator start;
 		iterator finish;
 		iterator end_of_storage;
-		void deallocate(){
+		void deallocate(){   // Recycling space （@notes:all element must called destructor）
 			if (start != end_of_storage){ // free space
 				Alloc::deallocate(CJH::addressof(*start), (end_of_storage - start)*sizeof(_Ty));
-				finish = start = end_of_storage = iterator(0);
+
+				//update the iterator
+				finish = start = end_of_storage = iterator((pointer_type)0);
 			}
 		}
 
 		/***
-		
-		值得新一步考量
+		值得新一步考量, 需要满足异常安全的第二个等级， 若成功就成功， 不成功就恢复到函数调用之前的状态
+		问题是：if中的代码不能保证但是还需要进一步分析才能保证异常安全等级  "强烈保证"
+		现阶段的异常安全等级是：  基本承诺
+
+		目前初步认为insert_aux是为异常安全等级  "强烈保证"的函数
 		*/
 		void insert_aux(iterator position, const _Ty& value){
 			if (finish != end_of_storage){
 				//在备用空间的起始位置， 用最后vector最后一个元素填充
-				construct(finish, *(finish - 1));
+				try{
+					construct(finish, *(finish - 1));
+				}
+				catch (...){
+					throw;
+				}
+				//_Ty value_copy = value;// 将其删除减少不必要的异常抛出点 //可能为抛出异常点   
+				try{
+					CJH::copy_backward(position, finish - 1, finish);
+				}
+				catch (...){
+					CJH::destroy(CJH::addressof(*finish));
+					throw;
+				}
+				(*position) = value;	//可能存在异常抛出点， 但是在copy_backward中没有抛出异常就说明复制构造函
+										//数调用得当不会抛出异常， 但是此结论在多线程当中无法得到保障
+				//last, update finish iterator
 				++finish;
-				_Ty value_copy = value;
-				CJH::copy_backward(position, finish - 2, (finish - 1));
-				(*position) = value_copy;
 			}
-			else{
+			else{  //此代码能保证异常安全中等级为   强烈保证
 				const size_type oldsize = size();
 				const size_type newsize = (oldsize == 0) ? 1 : oldsize * 2; //还需要考虑当前空间为0的情况
 				size_type nbyte = newsize * sizeof(_Ty);
@@ -167,7 +184,7 @@ using namespace CJH;
 					throw;
 				}
 
-				destroy(begin(), end());
+				CJH::destroy(begin(), end());
 				deallocate();
 				//udpate  water level
 				start = newstart;
@@ -180,7 +197,8 @@ using namespace CJH;
 			
 		}
 
-		explicit vector(size_type n) :start(Alloc::allocate(sizeof(_Ty))), finish(start + 1), end_of_storage(finish) {
+		explicit vector(size_type n) :start(0), finish(0), 
+			end_of_storage(0) {
 			pointer_type ptr = NULL;
 			try{
 				ptr = Alloc::allocate(sizeof(_Ty)*n);
@@ -230,12 +248,12 @@ using namespace CJH;
 			}
 			
 			iterator newstart(newptr);
-			iterator newfinish;
+			iterator newfinish = newstart;   // must init newfinish, （在2月20日晚上22.15检查出来的bug， newfinish 没有初始化）
 			try{
 				newfinish = CJH::uninitialized_copy(v.start, v.finish, newstart);
 			}
 			catch (...){
-				CJH::destroy(newstart, newfinish);
+				CJH::destroy(newstart, newfinish);//可有可没有  因为该函数一旦抛出异常 其已经初始化的空间便已经还原
 				Alloc::deallocate(newptr, nbyte);
 				throw;
 			}
@@ -245,40 +263,49 @@ using namespace CJH;
 		}
 
 		self& operator=(const self& v){
-			if (this == &v) return *this;
-
-			//1.first  allocate space, if fail, free this space and throw
-			pointer_type newptr = NULL;
-			size_type newsize(CJH::addressof(*(v.end_of_storage)) - CJH::addressof(*(v.start)));
-			size_t nbyte = newsize * sizeof(_Ty);
-			try{
-				newptr = Alloc::allocate(nbyte);
+			if (this != &v) {
+				try{
+					self tmp(v);
+					swap(tmp);
+				}
+				catch (...){
+					throw;
+				}
 			}
-			catch (...){
-				Alloc::deallocate(newptr, nbyte);
-				throw;
-			}
-
-
-			//2. init the space
-			iterator newstart(newptr);
-			iterator newfinish;
-			try{
-				newfinish = CJH::uninitialized_copy(v.start, v.finish, newstart);
-			}
-			catch (...){
-			//	CJH::destroy(newstart, newfinish);
-				Alloc::deallocate(newptr, nbyte);
-				throw;
-			}
-
-			//free prev space, and update water level
-			clear();
-			deallocate();
-			start = newstart;
-			finish = newfinish;
-			end_of_storage = start + newsize;
 			return *this;
+
+			////1.first  allocate space, if fail, free this space and throw
+			//pointer_type newptr = NULL;
+			//size_type newsize(CJH::addressof(*(v.end_of_storage)) - CJH::addressof(*(v.start)));
+			//size_t nbyte = newsize * sizeof(_Ty);
+			//try{
+			//	newptr = Alloc::allocate(nbyte);
+			//}
+			//catch (...){
+			//	Alloc::deallocate(newptr, nbyte);
+			//	throw;
+			//}
+
+
+			////2. init the space
+			//iterator newstart(newptr);
+			//iterator newfinish;
+			//try{
+			//	newfinish = CJH::uninitialized_copy(v.start, v.finish, newstart);
+			//}
+			//catch (...){
+			////	CJH::destroy(newstart, newfinish);
+			//	Alloc::deallocate(newptr, nbyte);
+			//	throw;
+			//}
+
+			////free prev space, and update water level
+			//clear();
+			//deallocate();
+			//start = newstart;
+			//finish = newfinish;
+			//end_of_storage = start + newsize;
+			//return *this;
 		}
 
 		~vector(){
@@ -316,7 +343,7 @@ using namespace CJH;
 		reference_type back(){  //完成
 			return *(end() - 1);
 		}
-
+		//提供异常安全
 		void push_back(const _Ty& x){
 			if (finish != end_of_storage){
 				construct(finish, x);
@@ -486,7 +513,7 @@ using namespace CJH;
 		}
 
 		void swap(self& v){
-			if (this == &v) return;
+			if (this != &v) return;
 			start.swap(v.start);
 			finish.swap(v.finish);
 			end_of_storage.swap(v.end_of_storage);

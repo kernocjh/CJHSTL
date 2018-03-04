@@ -12,13 +12,14 @@ __CJH_BEGIN
 			reinterpret_cast<const volatile char &>(value)));
 	}
 	template<class _Ty1, class _Ty2>
-	inline void construct(_Ty1 *p, const _Ty2& value){
+	inline void construct(_Ty1 *p, const _Ty2& value){  //强烈保证的   异常安全函数
 	//	new(static_cast<void*>(CJH::addressof(p)))_Ty1(value);
 		new(p)_Ty1(value);
 	}
 
 	template<class Forward_iterator, class _Ty>
-	inline void construct(Forward_iterator position, const _Ty& value){  //以为new里面异常调用了复制构造函数  可能涉及到抛出异常
+	inline void construct(Forward_iterator position, const _Ty& value){ //强烈保证的   异常安全函数
+																		//以为new里面异常调用了复制构造函数  可能涉及到抛出异常
 		typedef typename iterator_traits<Forward_iterator>::pointer_type pointer_type;
 		pointer_type p;
 		p = &*position;
@@ -72,7 +73,6 @@ __CJH_BEGIN
 			for (; first != last; ++first, (void)++current){
 				new(static_cast<void*>(CJH::addressof(*current)))value_type(*first);
 			}
-			return current;
 		}
 		catch (...){
 			for (; dist != current; ++dist){
@@ -80,6 +80,7 @@ __CJH_BEGIN
 			}
 			throw;
 		}
+		return current;
 	}
 
 	template<class Forward_iterator, class _Ty>
@@ -89,6 +90,8 @@ __CJH_BEGIN
 		}
 	}
 
+
+	//强烈保证的   异常安全函数
 	template<class Forward_iterator,class Size, class _Ty>
 	inline Forward_iterator uninitialized_fill_n(Forward_iterator first, Size n, const _Ty &value){
 		typedef typename CJH::iterator_traits<Forward_iterator>::value_type value_type;

@@ -945,7 +945,6 @@ __CJH_BEGIN
 
 		bool rbtreeInsert_unique(RBtree *T, RBtreeNodePtr node)
 		{
-
 			RBtreeNodePtr x, y;
 			y = T->NIL;
 			x = T->root;
@@ -1031,7 +1030,7 @@ __CJH_BEGIN
 			node->color = red;
 			return rbtreeInsertFixup(T, node);
 		}
-
+		 
 		bool rbtreeInsertFixup(RBtree *T, RBtreeNodePtr node)
 		{
 			RBtreeNodePtr y;

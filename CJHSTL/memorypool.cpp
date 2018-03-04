@@ -10,22 +10,25 @@ using namespace CJH;
 
 
 size_t Memorypool::totalSpace = 0;
-struct memtable Memorypool::table[__NMEMTABLE] = {	{ 0, 0, 8 },{ 0, 0, 16 },
-													{ 0, 0, 24 },{ 0, 0, 32 },
-													{ 0, 0, 40 }, { 0, 0, 48 }, 
-													{ 0, 0, 56 }, { 0, 0, 64 } ,
-													{ 0, 0, 72 }, { 0, 0, 80 } ,
-													{ 0, 0, 88 }, { 0, 0, 96 } ,
-													{ 0, 0, 104 }, { 0, 0, 112 } ,
-													{ 0, 0, 120 }, { 0, 0, 128 } };
-Memorypool::Memorypool(){
+bool Memorypool::isinit = false;
+#define MM_OFFSET 8
+struct memtable Memorypool::table[__NMEMTABLE] =
+{ { NULL, 0, 8 }, { NULL, 0, 16 },
+{ NULL, 0, 24 }, { NULL, 0, 32 },
+{ NULL, 0, 40 }, { NULL, 0, 48 },
+{ NULL, 0, 56 }, { NULL, 0, 64 },
+{ NULL, 0, 72 }, { NULL, 0, 80 },
+{ NULL, 0, 88 }, { NULL, 0, 96 },
+{ NULL, 0, 104 }, { NULL, 0, 112 },
+{ NULL, 0, 120 }, { NULL, 0, 128 } };
+void Memorypool::init_mm(){
 	for (unsigned int i = 0; i < __NMEMTABLE; ++i){
-		table[i].size = (const size_t)(i + 1)*__ALIGN;
-		table[i].count = 0;
-		table[i].free_link_node = (union obj*)0;
-		totalSpace = 0; 
-	//	refill((i + 1)*__ALIGN);
+		refill((i + 1)*__ALIGN);
+		//	refill((i + 1)*__ALIGN);
 	}
+}
+Memorypool::Memorypool(){
+	
 	std::cout << "Memorypool 构造\n";
 }
 Memorypool::~Memorypool(){
@@ -91,6 +94,10 @@ void Memorypool::refill(size_t n){
 void* Memorypool::allocate(size_t n){
 	if (0 == n) 
 		return (void*)0;
+	if (!isinit){
+		isinit = true;
+		init_mm();
+	}
 	union obj *obj = NULL;
 	size_t index = _locate_index(n);
 	size_t nbytes = _ROUND_UP(n);
@@ -102,8 +109,22 @@ void* Memorypool::allocate(size_t n){
 		obj = table[index].free_link_node;
 		if (nbytes != table[index].size) return (void *)0;
 		if (obj == NULL){  // 内存池空间不足，重新填充内存池空间
-			refill(n);
-			return allocate(n);
+
+			//原来的方案
+			//refill(n);
+			//return allocate(n);
+			//若当前空间不够就去nbytes+MM_OFFSET对应的桶里面去搜索
+			// 然后把最后的答案划分为nbytes + MM_OFFSET两个部分
+			void *ptr = allocate(nbytes + MM_OFFSET);
+			obj = (union obj*)ptr;
+			ptr = (char*)ptr + nbytes;
+
+			index = _locate_index(MM_OFFSET);
+			nbytes = _ROUND_UP(MM_OFFSET);
+			*(union obj**)(ptr) = table[index].free_link_node;
+			table[index].free_link_node = (union obj*)ptr;
+			++(table[index].count);
+			return (void*)obj;
 		}
 		else{
 			obj = table[index].free_link_node;
@@ -143,6 +164,13 @@ void Memorypool::deallocate(void *ptr, size_t n){
 		//free(ptr);
 	}
 	else{
+		void *mm_fragment;
+		mm_fragment = locate8(cptr + nbyte, MM_OFFSET);
+		if (mm_fragment != NULL){
+			
+			deallocate(cptr, nbyte + MM_OFFSET);
+			return;
+		}
 		size_t index = _locate_index(nbyte);
 		*(union obj**)(cptr) = table[index].free_link_node;
 		table[index].free_link_node = (union obj*)cptr;
@@ -203,6 +231,26 @@ void Memorypool::recover(void *ptr, size_t n){
 
 }
 
+void* Memorypool::locate8(void *ptr,size_t n){
+	size_t nbyte = _ROUND_UP(n);
+	size_t index = _locate_index(nbyte);
+	union obj* cur = NULL;
+	union obj* pre = NULL;
+	for (cur = table[index].free_link_node; cur != NULL; cur=*(union obj**)cur){
+		if (cur == (union obj*)ptr){
+			if (cur == table[index].free_link_node){
+				table[index].free_link_node = *(union obj**)cur;
+			}
+			else{
+				*(union obj**)pre = *(union obj**)cur;
+			}
+			--(table[index].count);
+			return cur;
+		}
+		pre = cur;
+	}
+	return NULL;
+}
 
 //Memorypool memory;
 //Memorypool mp;

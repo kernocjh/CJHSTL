@@ -13,7 +13,7 @@ __CJH_BEGIN
 	struct memtable{
 		union obj *free_link_node;
 		int count;
-		size_t size;
+		const size_t size;
 
 	};
 
@@ -24,9 +24,11 @@ __CJH_BEGIN
 
 	class Memorypool{
 	private:
+		static void init_mm();
 		static struct memtable table[__NMEMTABLE];
 		static size_t totalSpace;
 		static size_t _locate_index(size_t n);
+		static bool isinit;
 	public:
 		static size_t _ROUND_UP(size_t n);
 		Memorypool();
@@ -40,6 +42,7 @@ __CJH_BEGIN
 		static void refill(size_t n);
 		static void free_allmemory();
 		static void showMemorypool();
+		static void* locate8(void *ptr, size_t n);
 		~Memorypool();
 	};
 

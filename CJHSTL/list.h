@@ -308,6 +308,14 @@ cout << endl<< std::endl;*/
 		bool empty(){
 			return node->next == node;
 		}
+
+		void insert(iterator position, const size_type n, const _Ty &value){
+			iterator it = position;
+			for (size_type i = 0; i < n; ++i){
+				it = insert(it,value);
+			}
+		}
+
 		iterator insert(iterator position, const _Ty &value){
 			list_type ptr = create_node(value);
 			list_type cur = (list_type)position._MyNode();
