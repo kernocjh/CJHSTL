@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{913753C1-53B0-4E75-A674-3B24A537C8B7}</ProjectGuid>
+    <ProjectGuid>{B2831CCA-A777-426F-9C5C-29227A81D629}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>CJHSTL</RootNamespace>
   </PropertyGroup>

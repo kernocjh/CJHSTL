@@ -72,18 +72,17 @@ public:
 };
 
 int A::i = 0;
-#define NUM 100000
+#define NUM 30000
 void  fun(){
-	CJH::vector<int> v;
+	CJH::list<int> v;
 	CJH::Memorypool::showMemorypool();
 	v.insert(v.end(), NUM,1);
-	v.clear();
-	CJH::Memorypool::showMemorypool();
 	int i = 5;
 	i = i + 1;
 }
 int main(){
 	std::hash_map<int, int> hp;
 	fun();
+	CJH::Memorypool::showMemorypool();
  	return 0;
 }
