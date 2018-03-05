@@ -72,11 +72,21 @@ public:
 };
 
 int A::i = 0;
-#define NUM 30000
+#define NUM 10000000
 void  fun(){
-	CJH::list<int> v;
+	std::list<int> v;
 	CJH::Memorypool::showMemorypool();
-	v.insert(v.end(), NUM,1);
+	for (int i = 0; i < NUM; ++i){
+		v.push_back(i);
+	}
+	v.push_back(1);
+	v.push_back(1);
+	v.push_back(1);
+	v.push_back(1);
+	v.push_back(1);
+	v.push_back(1);
+	CJH::Memorypool::showMemorypool();
+//	CJH::copy(v.begin(), v.end(), ostream_iterator<int>(cout, " "));
 	int i = 5;
 	i = i + 1;
 }
@@ -84,5 +94,6 @@ int main(){
 	std::hash_map<int, int> hp;
 	fun();
 	CJH::Memorypool::showMemorypool();
+	system("pause");
  	return 0;
 }

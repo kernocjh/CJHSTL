@@ -25,10 +25,15 @@ __CJH_BEGIN
 	class Memorypool{
 	private:
 		static void init_mm();
+		static void init_hash();
+		static inline void put(const size_t key, void *const value);
+		static inline void* get(const size_t key);
 		static struct memtable table[__NMEMTABLE];
+		static union obj **hash;
 		static size_t totalSpace;
 		static size_t _locate_index(size_t n);
 		static bool isinit;
+		static bool ishash;
 	public:
 		static size_t _ROUND_UP(size_t n);
 		Memorypool();
@@ -42,6 +47,7 @@ __CJH_BEGIN
 		static void refill(size_t n);
 		static void free_allmemory();
 		static void showMemorypool();
+		static size_t get_key(void *ptr);
 		static void* locate8(void *ptr, size_t n);
 		~Memorypool();
 	};

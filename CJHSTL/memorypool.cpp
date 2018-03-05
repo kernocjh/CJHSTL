@@ -8,25 +8,58 @@
 
 using namespace CJH;
 
-
 size_t Memorypool::totalSpace = 0;
-bool Memorypool::isinit = false;
-#define MM_OFFSET 8
+bool Memorypool::isinit = false; 
+bool Memorypool::ishash = false;
+union obj** Memorypool::hash = NULL;
 struct memtable Memorypool::table[__NMEMTABLE] =
-{ { NULL, 0, 8 }, { NULL, 0, 16 },
-{ NULL, 0, 24 }, { NULL, 0, 32 },
-{ NULL, 0, 40 }, { NULL, 0, 48 },
-{ NULL, 0, 56 }, { NULL, 0, 64 },
-{ NULL, 0, 72 }, { NULL, 0, 80 },
-{ NULL, 0, 88 }, { NULL, 0, 96 },
-{ NULL, 0, 104 }, { NULL, 0, 112 },
-{ NULL, 0, 120 }, { NULL, 0, 128 } };
+					{ { NULL, 0, 8 }, { NULL, 0, 16 },
+					{ NULL, 0, 24 }, { NULL, 0, 32 },
+					{ NULL, 0, 40 }, { NULL, 0, 48 },
+					{ NULL, 0, 56 }, { NULL, 0, 64 },
+					{ NULL, 0, 72 }, { NULL, 0, 80 },
+					{ NULL, 0, 88 }, { NULL, 0, 96 },
+					{ NULL, 0, 104 }, { NULL, 0, 112 },
+					{ NULL, 0, 120 }, { NULL, 0, 128 } };
 void Memorypool::init_mm(){
 	for (unsigned int i = 0; i < __NMEMTABLE; ++i){
+		if (i == 0){
+			init_hash();
+			table[0].count = 0;
+			continue;
+		}
 		refill((i + 1)*__ALIGN);
-		//	refill((i + 1)*__ALIGN);
 	}
 }
+
+void Memorypool::put(const size_t key, void *const value){
+	if (value == NULL)
+		return;
+	*(union obj**)value = hash[key];
+	hash[key] = (union obj*)(value);
+}
+
+void* Memorypool::get(const size_t key) {
+	union obj* obj = hash[key];
+	if (obj != NULL){
+		hash[key] = *(union obj**)obj;
+	}
+	return (void*)obj;
+}
+
+void Memorypool::init_hash() throw(){
+	try{
+		hash = (union obj**)CJH::alloc_malloc::allocate(MM_HASHSIZE*(sizeof(void*)));
+		memset((void*)hash, 0, MM_HASHSIZE*(sizeof(void*)));
+	}
+	catch (...){
+		hash = NULL;
+		throw;
+	}
+	ishash = true;
+}
+
+
 Memorypool::Memorypool(){
 	
 	std::cout << "Memorypool 构造\n";
@@ -67,6 +100,7 @@ void Memorypool::showMemorypool(){
 			<< i + 1 << "号\t剩余" << table[i].count << "个\t首地址";
 		printf("%x\n", table[i].free_link_node);
 	}
+	std::cout << "\n";
 }
 
 void Memorypool::refill(size_t n){
@@ -92,7 +126,7 @@ void Memorypool::refill(size_t n){
 }
 
 void* Memorypool::allocate(size_t n){
-	if (0 == n) 
+	if (0 == n)
 		return (void*)0;
 	if (!isinit){
 		isinit = true;
@@ -105,9 +139,19 @@ void* Memorypool::allocate(size_t n){
 		return CJH::alloc_malloc::allocate(n);
 	}
 	else{
-
-		obj = table[index].free_link_node;
-		if (nbytes != table[index].size) return (void *)0;
+		if (nbytes == MM_OFFSET && ishash && table[index].count > 0){
+			for (size_t i = 0; i < MM_HASHSIZE; ++i){
+				if (hash[i] != NULL){
+					obj = hash[i];
+					hash[i] = *(union obj**)obj;
+					--(table[index].count);
+					return obj;
+				}
+			}
+		}
+		else
+			obj = table[index].free_link_node;
+//		if (nbytes != table[index].size) return (void *)0;
 		if (obj == NULL){  // 内存池空间不足，重新填充内存池空间
 
 			//原来的方案
@@ -121,8 +165,11 @@ void* Memorypool::allocate(size_t n){
 
 			index = _locate_index(MM_OFFSET);
 			nbytes = _ROUND_UP(MM_OFFSET);
-			*(union obj**)(ptr) = table[index].free_link_node;
-			table[index].free_link_node = (union obj*)ptr;
+
+			put(get_key(ptr), ptr);
+			/**(union obj**)(ptr) = table[index].free_link_node;
+			table[index].free_link_node = (union obj*)ptr;*/
+
 			++(table[index].count);
 			return (void*)obj;
 		}
@@ -156,11 +203,12 @@ void* Memorypool::reallocate(void *ptr, size_t oldsize, size_t newsize){
 */
 void Memorypool::deallocate(void *ptr, size_t n){
 	if (0 == n)  return;
-	size_t nbyte;
-	nbyte = _ROUND_UP(n);
+	size_t nbyte = _ROUND_UP(n);
+	size_t index = _locate_index(nbyte);
 	char *cptr = (char*)ptr;
 	if (n > __MAX_BYTES){
-		CJH::alloc_malloc::deallocate(ptr, n);
+	//	CJH::Memorypool::showMemorypool();
+		CJH::alloc_malloc::deallocate(ptr, nbyte);
 		//free(ptr);
 	}
 	else{
@@ -171,7 +219,11 @@ void Memorypool::deallocate(void *ptr, size_t n){
 			deallocate(cptr, nbyte + MM_OFFSET);
 			return;
 		}
-		size_t index = _locate_index(nbyte);
+		if (nbyte == MM_OFFSET && ishash){
+			put(get_key(ptr), ptr);
+			table[index].count += 1;
+			return;
+		}
 		*(union obj**)(cptr) = table[index].free_link_node;
 		table[index].free_link_node = (union obj*)cptr;
 		table[index].count += 1;
@@ -231,24 +283,36 @@ void Memorypool::recover(void *ptr, size_t n){
 
 }
 
+size_t Memorypool::get_key(void *const ptr) {
+	size_t num((size_t)ptr);
+	return num%MM_HASHSIZE;
+}
+
 void* Memorypool::locate8(void *ptr,size_t n){
 	size_t nbyte = _ROUND_UP(n);
 	size_t index = _locate_index(nbyte);
-	union obj* cur = NULL;
-	union obj* pre = NULL;
-	for (cur = table[index].free_link_node; cur != NULL; cur=*(union obj**)cur){
-		if (cur == (union obj*)ptr){
-			if (cur == table[index].free_link_node){
-				table[index].free_link_node = *(union obj**)cur;
-			}
-			else{
-				*(union obj**)pre = *(union obj**)cur;
-			}
-			--(table[index].count);
+	size_t key = get_key(ptr);
+	union obj *cur = NULL;
+	union obj *pre = NULL;
+	if (hash[key]){
+		cur = hash[key];
+		for (cur; cur != NULL; cur = *(union obj**)cur){
+			if (cur == ptr) break;
+			pre = cur;
+		}
+		if (!cur) return NULL;
+
+		--(table[index].count);
+		if (pre == NULL){
+			hash[key] = *(union obj**)cur;
 			return cur;
 		}
-		pre = cur;
+		else{
+			*(union obj**)pre = *(union obj**)cur;
+			return cur;
+		}
 	}
+
 	return NULL;
 }
 

@@ -19,6 +19,10 @@ struct binary_function
 
 
 //用于构建hashtable
+
+static const size_t MM_OFFSET = 8;  //表示相邻内存池桶的偏移量
+static const size_t MM_HASHSIZE = 1572869;
+static const size_t MM_HASHCRISIS = 10240;
 static const int __stl_nun_primes = 28;  //质数数量
 static const unsigned long __stl_prime_list[__stl_nun_primes] = {  //质数数组
 	53, 97, 193, 389, 769,

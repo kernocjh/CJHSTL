@@ -89,7 +89,7 @@ __CJH_BEGIN
 			}
 			return ptr;
 		}
-		static void deallocate(void *p, size_t = 0){
+		static void deallocate(void *p, size_t n= 0){
 			free(p);
 		}
 		
