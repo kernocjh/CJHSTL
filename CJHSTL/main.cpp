@@ -72,9 +72,9 @@ public:
 };
 
 int A::i = 0;
-#define NUM 10000000
+#define NUM 100000
 void  fun(){
-	std::list<int> v;
+	CJH::list<int> v;
 	CJH::Memorypool::showMemorypool();
 	for (int i = 0; i < NUM; ++i){
 		v.push_back(i);
@@ -94,6 +94,5 @@ int main(){
 	std::hash_map<int, int> hp;
 	fun();
 	CJH::Memorypool::showMemorypool();
-	system("pause");
  	return 0;
 }
