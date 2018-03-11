@@ -83,10 +83,6 @@ __CJH_BEGIN
 			}
 		}
 		*/
-		static void destroy(pointer p){
-			_Destroy<>(p);
-		}
-
 		/*size_tye maxsize() const{
 
 		}*/
@@ -102,7 +98,7 @@ __CJH_BEGIN
 		}
 	private:
 		allocator(){
-			cout << "allocator ¹¹Ôì";
+			
 		}
 	};
 

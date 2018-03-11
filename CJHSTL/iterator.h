@@ -78,7 +78,7 @@ __CJH_BEGIN
 		value_type(const _Iterator_base&){
 			typedef typename iterator_traits<_Iterator_base>::value_type value_type;
 
-			return static_cast<value_>
+			return static_cast<value_type*>(0);
 		}
 
 

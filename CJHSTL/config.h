@@ -5,7 +5,7 @@
 #define __CJH_BEGIN namespace CJH{
 #define __CJH_END  }
 
-#include <crtdefs.h>
+//#include <crtdefs.h>
 __CJH_BEGIN
 template<class _Arg1,
 class _Arg2,

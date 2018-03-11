@@ -56,19 +56,19 @@ __CJH_BEGIN
 	};
 
 
-	template<class _Ty>
-	struct identity{
-		typedef _Ty type;
-		const _Ty& operator()(const _Ty& _Left) const  //主要利用隐式转化
-		{	// apply identity operator to operand
-			return (_Left);
-		}
+	//template<class _Ty>
+	//struct identity{
+	//	typedef _Ty type;
+	//	const _Ty& operator()(const _Ty& _Left) const  //主要利用隐式转化
+	//	{	// apply identity operator to operand
+	//		return (_Left);
+	//	}
 
-		template<class T = CJH::pair<_Ty, ...> >
-		const _Ty& operator()(const T& _Left) const  //主要利用隐式转化
-		{	// apply identity operator to operand
-			return (_Left.first);
-		}
-	};
+	//	template<class T = CJH::pair<_Ty, ...> >
+	//	const _Ty& operator()(const T& _Left) const  //主要利用隐式转化
+	//	{	// apply identity operator to operand
+	//		return (_Left.first);
+	//	}
+	//};
 __CJH_END
 #endif  //__OPRATOR_H__

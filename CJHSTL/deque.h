@@ -47,8 +47,8 @@ using namespace CJH;
 	};
 
 
-	template<class _Ty, class Alloc = deque_allocate_map<_Ty, CJH::allocator<_Ty>, Bufsize>,
-	class Category = randow_access_iterator_tag, size_t Bufsize = 512>
+	template<class _Ty, class Alloc = deque_allocate_map<_Ty, CJH::allocator<_Ty>, size_t Bufsize>,
+	class Category = CJH::randow_access_iterator_tag, size_t Bufsize = 512>
 	class _deque_iterator :public iterator_base<Category,_Ty>{
 	public:
 		typedef iterator_base<Category, _Ty> _Mybase;
@@ -63,22 +63,22 @@ using namespace CJH;
 		typedef mapelement_type* map_pointer;
 	public:
 
-		_deque_iterator() :iterator_base(),
+		_deque_iterator() :iterator_base<Category, _Ty>(),
 			node(0), first(0), last(0), cur(0){
 
 		}
 
 		_deque_iterator(const map_pointer pnode) :
-			node(pnode0),first(0), cur(0), last(0){
+			node(pnode),first(0), cur(0), last(0){
 
 		}
 		_deque_iterator(const map_pointer pnode,
-			pointer_type pfirst, pointer_type plast, pointer_type pcur) :iterator_base()
-			node(ptr), first(pfirst), last(plast), cur(pcur){
+			pointer_type pfirst, pointer_type plast, pointer_type pcur) :iterator_base<Category, _Ty>()
+			node(pnode), first(pfirst), last(plast), cur(pcur){
 
 		}
 
-		_deque_iterator(const self& it) :iterator_base(),
+		_deque_iterator(const self& it) :
 			node(it.node), cur(it.cur), first(it.first), last(it.last){
 
 		}

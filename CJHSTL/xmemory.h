@@ -115,7 +115,7 @@ __CJH_BEGIN
 
 	template<class Forward_iterator1, class Forward_iterator2>
 	inline void iter_swap(Forward_iterator1 x, Forward_iterator2 y){
-		typedef iterator_traits<Forward_iterator1>::value_type value_type;
+		typedef typename iterator_traits<Forward_iterator1>::value_type value_type;
 		value_type tmp(*x);
 		*x = *y;
 		*y = tmp;
