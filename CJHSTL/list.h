@@ -246,7 +246,7 @@ cout << endl<< std::endl;*/
 				throw;
 			}
 		}
-		template<class Iter, typename value = CJH::iterator_traits<Iter>::value_type>
+		template<class Iter>
 		list(Iter first, Iter last):list(){
 			try{
 				while (first != last){

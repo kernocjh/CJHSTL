@@ -5,8 +5,14 @@
 #define __CJH_BEGIN namespace CJH{
 #define __CJH_END  }
 
-//#include <crtdefs.h>
+
+#if defined(WIN32)
+#include <crtdefs.h>
+#else
+typedef int ptrdiff_t;
+#endif
 __CJH_BEGIN
+
 template<class _Arg1,
 class _Arg2,
 class _Result>

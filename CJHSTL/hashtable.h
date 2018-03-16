@@ -2,7 +2,7 @@
 #define __HASHTABLE_H__
 
 
-#include"config.h"
+#include "config.h"
 #include "allocator.h"
 #include "iterator.h"
 #include "operator.h"
@@ -18,7 +18,7 @@ __CJH_BEGIN
 	};
 
 	template<class _Ty, class Alloc = CJH::alloc_malloc>
-	class node_allocator{
+	class _node_allocator{
 	public:
 		typedef _Ty value_type;
 		typedef _Ty* pointer_type;
@@ -51,7 +51,7 @@ __CJH_BEGIN
 	template<class Key, class _Ty, class HashFun, class Equalkey, class Alloc>
 	class hash_iterator :public CJH::iterator_base<CJH::forward_iterator_tag, _Ty>{
 	public:
-		typedef hashtable<Key, _Ty, HashFun, Equalkey, Alloc> hashtable;
+		typedef hashtable<Key, _Ty, HashFun, Equalkey, Alloc> hash_table;
 		typedef hash_iterator<Key, _Ty, HashFun, Equalkey, Alloc> self;
 
 		typedef __hashtable_node<_Ty> node;
@@ -63,11 +63,11 @@ __CJH_BEGIN
 		typedef typename _MyBase::iterator_category iterator_category;
 		typedef size_t size_type;
 	public:
-		hash_iterator(node* ptr , hashtable *htptr ) :cur(ptr), ht(htptr){
+		hash_iterator(node* ptr , hash_table *htptr ) :cur(ptr), ht(htptr){
 
 		}
 
-		hash_iterator() :cur((node*)0), ht((hashtable*)0){
+		hash_iterator() :cur((node*)0), ht((hash_table*)0){
 
 		}
 
@@ -125,7 +125,7 @@ __CJH_BEGIN
 		}
 	private:
 		node* cur;
-		hashtable* ht;
+		hash_table* ht;
 	};
 
 
@@ -147,7 +147,7 @@ __CJH_BEGIN
 
 	private:
 		typedef struct __hashtable_node<_Ty> node;
-		typedef node_allocator<node, Alloc> node_allocator;
+		typedef _node_allocator<node, Alloc> node_allocator;
 		typedef CJH::vector<node*> vector;
 		size_type element_num;
 		vector buckets;
@@ -241,7 +241,7 @@ __CJH_BEGIN
 			size_type index = bkt_num_key(key);
 			node* cur = buckets[index];
 			node* prev = (node*)0;
-			iterator tmp(position);
+			iterator tmp(cur, this);
 			++tmp;
 			while (cur != NULL){
 				if (equals(get_key(cur->val), key)){

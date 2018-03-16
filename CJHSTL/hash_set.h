@@ -131,7 +131,7 @@ __CJH_BEGIN
 		}
 
 		iterator erase(iterator first, iterator last){
-			return t.erase(firts, last);
+			return t.erase(first, last);
 		}
 
 		void clear(){
@@ -289,7 +289,7 @@ __CJH_BEGIN
 		}
 
 		iterator erase(iterator first, iterator last){
-			return t.erase(firts, last);
+			return t.erase(first, last);
 		}
 
 		void clear(){

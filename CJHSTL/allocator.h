@@ -83,6 +83,7 @@ __CJH_BEGIN
 			}
 		}
 		*/
+
 		/*size_tye maxsize() const{
 
 		}*/
@@ -98,8 +99,8 @@ __CJH_BEGIN
 		}
 	private:
 		allocator(){
-			
-		}
+		
+        }
 	};
 
 	template<class _Ty>

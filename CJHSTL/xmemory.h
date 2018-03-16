@@ -2,6 +2,7 @@
 #define __XMEMORY_H__
 
 #include "config.h"
+#include "iterator.h"
 __CJH_BEGIN
 
 
@@ -20,7 +21,7 @@ __CJH_BEGIN
 	template<class Forward_iterator, class _Ty>
 	inline void construct(Forward_iterator position, const _Ty& value){ //强烈保证的   异常安全函数
 																		//以为new里面异常调用了复制构造函数  可能涉及到抛出异常
-		typedef typename iterator_traits<Forward_iterator>::pointer_type pointer_type;
+		typedef typename CJH::iterator_traits<Forward_iterator>::pointer_type pointer_type;
 		pointer_type p;
 		p = &*position;
 	//	new(p)_Ty(value);
@@ -76,7 +77,7 @@ __CJH_BEGIN
 		}
 		catch (...){
 			for (; dist != current; ++dist){
-				destroy(CJH::addressof(*dist));
+				CJH::destroy(CJH::addressof(*dist));
 			}
 			throw;
 		}
@@ -115,7 +116,8 @@ __CJH_BEGIN
 
 	template<class Forward_iterator1, class Forward_iterator2>
 	inline void iter_swap(Forward_iterator1 x, Forward_iterator2 y){
-		typedef typename iterator_traits<Forward_iterator1>::value_type value_type;
+
+		typedef typename CJH::iterator_traits<Forward_iterator1>::value_type value_type;
 		value_type tmp(*x);
 		*x = *y;
 		*y = tmp;

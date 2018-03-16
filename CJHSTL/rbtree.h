@@ -1,6 +1,6 @@
 #ifndef __RBTREE_H__
 #define __RBTREE_H__
-#include"config.h"
+#include "config.h"
 #include "allocator.h"
 #include "iterator.h"
 #include "operator.h"
@@ -10,8 +10,8 @@ __CJH_BEGIN
 
 	enum Color { red, black };
 	template<class Key, class _Ty>
-	struct RBtreeNode{
-		typedef struct RBtreeNode<Key, _Ty>* RBtreeNodePtr;
+	struct _RBtreeNode{
+		typedef struct _RBtreeNode<Key, _Ty>* RBtreeNodePtr;
 		typedef Key key_type;
 		typedef _Ty value_type;
 		typedef value_type* pointer_type;
@@ -23,37 +23,37 @@ __CJH_BEGIN
 		RBtreeNodePtr left;
 		RBtreeNodePtr right;
 		RBtreeNodePtr parent;
-		RBtreeNode(const Key& _key, const _Ty& _value) : key(_key), value(_value),
+		_RBtreeNode(const Key& _key, const _Ty& _value) : key(_key), value(_value),
 			left(NULL), right(NULL), parent(NULL), color(red){
 		
 		}
 
-		RBtreeNode() :key(), value(), 
+		_RBtreeNode() :key(), value(), 
 			left(NULL), right(NULL), parent(NULL), color(red){
 		
 		}
 	};
 
 	template<class Key, class _Ty>
-	 struct RBtree{
-		typedef typename RBtreeNode<Key, _Ty> RBtreeNode;
+	 struct _RBtree{
+		typedef _RBtreeNode<Key, _Ty> RBtreeNode;
 		typedef typename RBtreeNode::RBtreeNodePtr RBtreeNodePtr;
 		RBtreeNodePtr root;
 		RBtreeNodePtr NIL;
-		RBtree() :root(NULL), NIL(NULL){
+		_RBtree() :root(NULL), NIL(NULL){
 
 		}
 
-		RBtree(const RBtree& rb) :root(rb.root), NIL(rb.NIL){
+		_RBtree(const _RBtree& rb) :root(rb.root), NIL(rb.NIL){
 
 		}
 
-		RBtree(const RBtreeNodePtr& _root, const RBtreeNodePtr& _NIL) :root(_root), NIL(_NIL){
+		_RBtree(const RBtreeNodePtr& _root, const RBtreeNodePtr& _NIL) :root(_root), NIL(_NIL){
 
 		}
 	};
 
-	template<class Key, class _Ty, class Alloc=CJH::allocator<RBtreeNode<Key, _Ty> > >
+	template<class Key, class _Ty, class Alloc=CJH::allocator<_RBtreeNode<Key, _Ty> > >
 	class rbtreenode_allocator{
 	public:
 		typedef typename Alloc::value_type value_type;  //以一个node为标准
@@ -80,7 +80,7 @@ __CJH_BEGIN
 		}
 	};
 	
-	template<class Key, class _Ty, class RBtreeNode = RBtreeNode<Key, _Ty>,
+	template<class Key, class _Ty, class RBtreeNode = _RBtreeNode<Key, _Ty>,
 			class Category = CJH::bidirectinal_iterator_tag>
 	class rbtree_iterator:public iterator_base<Category, _Ty> {
 	public:
@@ -94,11 +94,11 @@ __CJH_BEGIN
 		typedef typename RBtreeNode::pointer_type pointer_type;
 		typedef typename RBtreeNode::reference_type reference_type;
 		typedef typename RBtreeNode::RBtreeNodePtr RBtreeNodePtr;
-		typedef RBtree<Key, _Ty> RBtree;
+		typedef _RBtree<Key, _Ty> RBtree;
 		typedef RBtree* RBtreePtr;
 		typedef rbtree_iterator<Key, _Ty, RBtreeNode, Category> self;
 	public:
-		rbtree_iterator() :iterator_base(), ptr(){
+		rbtree_iterator() :iterator_base<Category, _Ty>(), node(){
 
 		}
 		explicit rbtree_iterator(const RBtree& rb) :node(rb){
@@ -228,7 +228,7 @@ __CJH_BEGIN
 		RBtree node;
 	};
 
-	template<class Key, class _Ty, class RBtreeNode = RBtreeNode<Key, _Ty>,
+	template<class Key, class _Ty, class RBtreeNode = _RBtreeNode<Key, _Ty>,
 				class Category = CJH::bidirectinal_iterator_tag>
 	class rbtree_reverse_iterator{
 	public:
@@ -242,11 +242,11 @@ __CJH_BEGIN
 		typedef typename RBtreeNode::pointer_type pointer_type;
 		typedef typename RBtreeNode::reference_type reference_type;
 		typedef typename RBtreeNode::RBtreeNodePtr RBtreeNodePtr;
-		typedef RBtree<Key, _Ty> RBtree;
+		typedef _RBtree<Key, _Ty> RBtree;
 		typedef RBtree* RBtreePtr;
 		typedef rbtree_reverse_iterator<Key, _Ty, RBtreeNode, Category> self;
 	public:
-		rbtree_reverse_iterator() :iterator_base(), ptr(){
+		rbtree_reverse_iterator() :iterator_base<Category, _Ty>(), node(){
 
 		}
 		explicit rbtree_reverse_iterator(const RBtree& rb) :node(rb){
@@ -376,9 +376,8 @@ __CJH_BEGIN
 		RBtree node;
 
 	};
-
-	template<class Key, class _Ty, class Compare = CJH::less<Key>,
-			class Alloc = rbtreenode_allocator<Key, _Ty> >
+	
+    template<class Key, class _Ty, class Compare = CJH::less<Key>, class Alloc = rbtreenode_allocator<Key, _Ty> >
 	class rbtree_base{
 	public:
 		typedef _Ty value_type;
@@ -389,7 +388,7 @@ __CJH_BEGIN
 		typedef size_t size_type;
 		typedef typename Alloc::different_type different_type;
 
-		typedef RBtree<Key, _Ty> RBtree;
+		typedef _RBtree<Key, _Ty> RBtree;
 		typedef typename RBtree::RBtreeNode RBtreeNode;
 		typedef typename RBtree::RBtreeNodePtr RBtreeNodePtr;
 		typedef rbtree_base<Key, _Ty, Compare, Alloc> self;
@@ -494,7 +493,7 @@ __CJH_BEGIN
 			return rbtree.NIL;
 		}
 
-		key_type Key(const RBtreeNodePtr x){
+		key_type getkey(const RBtreeNodePtr x){
 			return x->key;
 		}
 
@@ -628,11 +627,11 @@ __CJH_BEGIN
 			RBtreeNodePtr tmp = root();
 			RBtreeNodePtr ptr = NIL();
 			while (tmp != NIL()){
-				if (Key(tmp) == key){
+				if (getkey(tmp) == key){
 					ptr = tmp;
 					break;
 				}
-				else if (key_compare(key, (Key(tmp)))){
+				else if (key_compare(key, (getkey(tmp)))){
 					tmp = left(tmp);
 				}
 				else{
@@ -650,11 +649,11 @@ __CJH_BEGIN
 			RBtreeNodePtr tmp = rbtree.root;
 			RBtreeNodePtr ptr = NIL();
 			while (tmp != NIL()){
-				if (Key(tmp) == key){
+				if (getkey(tmp) == key){
 					ptr = tmp;
 					tmp = left(tmp);
 				}
-				else if (key_compare(key, Key(tmp))){
+				else if (key_compare(key, getkey(tmp))){
 					tmp = left(tmp);
 				}
 				else{
@@ -669,11 +668,11 @@ __CJH_BEGIN
 			RBtreeNodePtr tmp = rbtree.root;
 			RBtreeNodePtr ptr = NIL();
 			while (tmp != NIL()){
-				if (Key(tmp) == key){
+				if (getkey(tmp) == key){
 					ptr = tmp;
 					tmp = right(tmp);
 				}
-				else if (key_compare(key, Key(tmp))){
+				else if (key_compare(key, getkey(tmp))){
 					tmp = left(tmp);
 				}
 				else{
@@ -792,8 +791,8 @@ __CJH_BEGIN
 
 		iterator erase(const key_type& key){
 			RBtreeNodePtr tmp = rbtree.root;
-			while (tmp != NIL() && Key(tmp) != key){
-				if (key_compare(key , Key(tmp)))
+			while (tmp != NIL() && getkey(tmp) != key){
+				if (key_compare(key , getkey(tmp)))
 					tmp = left(tmp);
 				else
 					tmp = right(tmp);
@@ -832,7 +831,7 @@ __CJH_BEGIN
 		void inOrder(RBtreeNodePtr root){
 			if (root == NIL()) return;
 			inOrder(root->left);
-			cout << root->key << "\n";
+			//cout << root->key << "\n";
 			inOrder(root->right);
 		}
 	private:
@@ -843,7 +842,7 @@ __CJH_BEGIN
 
 		void _travelor(RBtreeNodePtr root, int counter){
 			if (root == rbtree.NIL){
-				cout << "(" << counter << ")";
+		//		cout << "(" << counter << ")";
 				return;
 			}
 			if (root->color == black)

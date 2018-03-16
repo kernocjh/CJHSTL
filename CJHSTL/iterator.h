@@ -48,7 +48,7 @@ __CJH_BEGIN
 
 	template<class _Ty>
 	struct iterator_traits<_Ty*>{//针对原生指针，偏特化  榨汁机的萃取
-		typedef randow_access_iterator_tag iterator_category;
+		typedef struct randow_access_iterator_tag iterator_category;
 		typedef _Ty value_type;
 		typedef _Ty* pointer_type;
 		typedef _Ty& reference_type;
@@ -57,7 +57,7 @@ __CJH_BEGIN
 
 	template<class _Ty>
 	struct iterator_traits<const _Ty*>{//针对const原生指针(pointer-to-const)，偏特化   榨汁机的萃取
-		typedef randow_access_iterator_tag iterator_category;
+		typedef struct randow_access_iterator_tag iterator_category;
 		typedef _Ty value_type;
 		typedef _Ty* pointer_type;
 		typedef _Ty& reference_type;

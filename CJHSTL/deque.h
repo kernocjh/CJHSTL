@@ -11,7 +11,7 @@ using namespace CJH;
 
 	
 	template<class mapelement_type, class Alloc = CJH::allocator<mapelement_type> >
-	class map_allocate{
+	class _map_allocate{
 	public:
 		typedef mapelement_type value_type;
 		typedef mapelement_type* pointer_type;
@@ -47,18 +47,16 @@ using namespace CJH;
 	};
 
 
-	template<class _Ty, class Alloc = deque_allocate_map<_Ty, CJH::allocator<_Ty>, size_t Bufsize>,
-	class Category = CJH::randow_access_iterator_tag, size_t Bufsize = 512>
+	template<class _Ty, class Category = struct randow_access_iterator_tag, size_t Bufsize = 512>
 	class _deque_iterator :public iterator_base<Category,_Ty>{
 	public:
 		typedef iterator_base<Category, _Ty> _Mybase;
-
 		typedef typename _Mybase::pointer_type pointer_type;
 		typedef typename _Mybase::value_type value_type;
 		typedef typename _Mybase::difference_type difference_type;
 		typedef typename _Mybase::reference_type reference_type;
 		typedef typename _Mybase::iterator_category iterator_category;
-		typedef _deque_iterator<_Ty, Alloc, Category, Bufsize> self; //在定义自己的时候必须不能一直默认， 如果这里去掉Bufsize就有可能出现模板错误
+		typedef _deque_iterator<_Ty, Category, Bufsize> self; //在定义自己的时候必须不能一直默认， 如果这里去掉Bufsize就有可能出现模板错误
 		typedef _Ty* mapelement_type;
 		typedef mapelement_type* map_pointer;
 	public:
@@ -73,7 +71,7 @@ using namespace CJH;
 
 		}
 		_deque_iterator(const map_pointer pnode,
-			pointer_type pfirst, pointer_type plast, pointer_type pcur) :iterator_base<Category, _Ty>()
+			pointer_type pfirst, pointer_type plast, pointer_type pcur) :iterator_base<Category, _Ty>(),
 			node(pnode), first(pfirst), last(plast), cur(pcur){
 
 		}
@@ -263,12 +261,11 @@ using namespace CJH;
 		typedef _Ty* mapelement_type;
 		typedef mapelement_type* map_pointer;
 
-		typedef map_allocate<mapelement_type, CJH::allocator<mapelement_type> > map_allocate;
+		typedef _map_allocate<_Ty*, CJH::allocator<_Ty*> > map_allocate;
 
 		typedef deque_allocate_map<_Ty, Alloc, Bufsize> data_allocate;
 
-		typedef _deque_iterator<_Ty, data_allocate,
-			randow_access_iterator_tag, Bufsize> iterator;
+		typedef _deque_iterator<_Ty, struct randow_access_iterator_tag, Bufsize> iterator;
 		typedef typename iterator::difference_type difference_type;
 		typedef deque<_Ty, Alloc,Bufsize> self;
 	public:
