@@ -220,26 +220,3 @@ __CJH_BEGIN
 
 __CJH_END
 #endif //__QUEUE_H__
-
-
-
-//clock_t start, end;
-//start = clock(); CJH::vector<int> v;
-//
-//CJH::priority_queue<int, CJH::vector<int>, CJH::less<int> > pq;
-////	std::priority_queue<int> pq;
-//srand(time(0));
-//for (int i = 0; i < CIRNUM; ++i){
-//	int num = rand() % CIRNUM;
-//	//	cout << num << " ";
-//	pq.push(num);
-//}
-//cout << endl;
-//for (int i = 0; i < CIRNUM; ++i){
-//	cout << pq.top() << "  size = " << pq.size() << endl;
-//	pq.pop();
-//}
-////	pq.pop();	I
-//end = clock();
-//cout << "time = " << end - start << endl;
-//cout << "size = " << pq.size() << endl;
